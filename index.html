@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <title>Our Corner — Luke &amp; Sophie 💖</title>
+  <meta name="theme-color" content="#FBF0EE" />
+  <meta name="description" content="Our Corner — a private little home for Luke &amp; Sophie." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <section id="home" class="page active" data-screen-label="Home"></section>
+
+  <!-- ============ MESSAGES ============ -->
+  <section id="messages" class="page" data-screen-label="Messages"></section>
+
+  <!-- ============ DIARY ============ -->
+  <section id="diary" class="page" data-screen-label="Diary"></section>
+
+  <!-- ============ QUESTIONS ============ -->
+  <section id="questions" class="page" data-screen-label="Daily Questions"></section>
+
+  <!-- ============ GAMES hub ============ -->
+  <section id="games" class="page" data-screen-label="Games"></section>
+  <section id="game-wyr" class="page" data-screen-label="Would You Rather"></section>
+  <section id="game-memory" class="page" data-screen-label="Memory Match"></section>
+  <section id="game-checkers" class="page" data-screen-label="Checkers"></section>
+
+  <!-- ============ PET ============ -->
+  <section id="pet" class="page" data-screen-label="Our Puppy"></section>
+
+  <!-- ============ DATES ============ -->
+  <section id="dates" class="page" data-screen-label="Date Ideas"></section>
+
+  <!-- ============ GALLERY ============ -->
+  <section id="gallery" class="page" data-screen-label="Photo Gallery"></section>
+
+  <!-- ============ STATS ============ -->
+  <section id="stats" class="page" data-screen-label="Relationship Stats"></section>
+
+  <!-- ============ PRAYER ============ -->
+  <section id="prayer" class="page" data-screen-label="Prayer"></section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="settings" class="page" data-screen-label="Settings"></section>
+
+  <!-- ============ DRAWING (overlay) ============ -->
+  <div id="drawHost"></div>
+
+  <!-- ============ Bottom nav ============ -->
+  <nav class="tabbar">
+    <button class="tab" data-go="home"><span class="ic">🏡</span><span class="lbl">Home</span></button>
+    <button class="tab" data-go="messages"><span class="ic">💌</span><span class="lbl">Messages</span></button>
+    <button class="tab" data-go="diary"><span class="ic">📖</span><span class="lbl">Diary</span></button>
+    <button class="tab" data-go="games"><span class="ic">🎮</span><span class="lbl">Games</span></button>
+    <button class="tab" data-go="pet"><span class="ic">🐶</span><span class="lbl">Puppy</span></button>
+  </nav>
+
+</div>
+
+<!-- Lightbox (photos) -->
+<div class="lightbox" id="lightbox">
+  <button class="x" data-lb="close">✕</button>
+  <button class="nav prev" data-lb="prev">‹</button>
+  <img id="lbImg" alt="" />
+  <button class="nav next" data-lb="next">›</button>
+  <div class="cap" id="lbCap"></div>
+  <div class="ctrls">
+    <button class="ico-c" data-lb="fav">🤍</button>
+    <button class="ico-c" data-lb="del">🗑️</button>
+  </div>
+</div>
+
+<!-- Modal host -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- Toasts + FX -->
+<div class="toast-wrap" id="toasts"></div>
+<div id="fx"></div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="filePick" accept="image/*" class="hidden" />
+
+<!-- ====== Scripts (vanilla, load order matters) ====== -->
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/home.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/diary.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/games.js"></script>
+<script src="js/checkers.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/pet.js"></script>
+<script src="js/dates.js"></script>
+<script src="js/gallery.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/prayer.js"></script>
+<script src="js/settings.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
