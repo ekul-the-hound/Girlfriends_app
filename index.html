@@ -2,111 +2,423 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <title>Our Corner — Luke &amp; Sophie 💖</title>
-  <meta name="theme-color" content="#FBF0EE" />
-  <meta name="description" content="Our Corner — a private little home for Luke &amp; Sophie." />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#F9F5F0" />
+  <title>Our Corner 💖</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
 </head>
 <body>
-<div id="app">
 
-  <!-- ============ HOME ============ -->
-  <section id="home" class="page active" data-screen-label="Home"></section>
-
-  <!-- ============ MESSAGES ============ -->
-  <section id="messages" class="page" data-screen-label="Messages"></section>
-
-  <!-- ============ DIARY ============ -->
-  <section id="diary" class="page" data-screen-label="Diary"></section>
-
-  <!-- ============ QUESTIONS ============ -->
-  <section id="questions" class="page" data-screen-label="Daily Questions"></section>
-
-  <!-- ============ GAMES hub ============ -->
-  <section id="games" class="page" data-screen-label="Games"></section>
-  <section id="game-wyr" class="page" data-screen-label="Would You Rather"></section>
-  <section id="game-memory" class="page" data-screen-label="Memory Match"></section>
-  <section id="game-checkers" class="page" data-screen-label="Checkers"></section>
-
-  <!-- ============ PET ============ -->
-  <section id="pet" class="page" data-screen-label="Our Puppy"></section>
-
-  <!-- ============ DATES ============ -->
-  <section id="dates" class="page" data-screen-label="Date Ideas"></section>
-
-  <!-- ============ GALLERY ============ -->
-  <section id="gallery" class="page" data-screen-label="Photo Gallery"></section>
-
-  <!-- ============ STATS ============ -->
-  <section id="stats" class="page" data-screen-label="Relationship Stats"></section>
-
-  <!-- ============ PRAYER ============ -->
-  <section id="prayer" class="page" data-screen-label="Prayer"></section>
-
-  <!-- ============ SETTINGS ============ -->
-  <section id="settings" class="page" data-screen-label="Settings"></section>
-
-  <!-- ============ DRAWING (overlay) ============ -->
-  <div id="drawHost"></div>
-
-  <!-- ============ Bottom nav ============ -->
-  <nav class="tabbar">
-    <button class="tab" data-go="home"><span class="ic">🏡</span><span class="lbl">Home</span></button>
-    <button class="tab" data-go="messages"><span class="ic">💌</span><span class="lbl">Messages</span></button>
-    <button class="tab" data-go="diary"><span class="ic">📖</span><span class="lbl">Diary</span></button>
-    <button class="tab" data-go="games"><span class="ic">🎮</span><span class="lbl">Games</span></button>
-    <button class="tab" data-go="pet"><span class="ic">🐶</span><span class="lbl">Puppy</span></button>
-  </nav>
-
-</div>
-
-<!-- Lightbox (photos) -->
-<div class="lightbox" id="lightbox">
-  <button class="x" data-lb="close">✕</button>
-  <button class="nav prev" data-lb="prev">‹</button>
-  <img id="lbImg" alt="" />
-  <button class="nav next" data-lb="next">›</button>
-  <div class="cap" id="lbCap"></div>
-  <div class="ctrls">
-    <button class="ico-c" data-lb="fav">🤍</button>
-    <button class="ico-c" data-lb="del">🗑️</button>
+<!-- ============ ADMIN LOGIN ============ -->
+<section id="screen_adminLogin" class="screen admin" hidden>
+  <div class="auth-card admin">
+    <h1>🔐 Admin Login</h1>
+    <p class="auth-sub">Our Corner — administration</p>
+    <p id="adminHint" class="auth-hint" hidden>First run: default login is <b>admin / admin123</b> — change it after signing in.</p>
+    <label>Username<input id="adminUser" type="text" autocapitalize="off" value="admin"></label>
+    <label>Password<input id="adminPass" type="password"></label>
+    <button class="btn-primary block" id="adminLoginBtn">Login</button>
+    <a href="#" id="toCoupleLogin" class="auth-link">← Back to Couple Login</a>
   </div>
-</div>
+</section>
 
-<!-- Modal host -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal" id="modal"></div>
-</div>
+<!-- ============ ADMIN DASHBOARD ============ -->
+<section id="screen_adminDash" class="screen admin" hidden>
+  <aside class="admin-sidebar">
+    <h2>Our Corner</h2>
+    <nav>
+      <button id="adminNavAccounts" class="on">👥 Accounts</button>
+      <button id="adminNavStats">📊 Stats</button>
+      <button id="adminNavSettings">⚙️ Settings</button>
+      <button id="adminLogout">🚪 Logout</button>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div id="adminView_accounts">
+      <div class="admin-top">
+        <div class="admin-totals">
+          <div class="kpi"><b id="adminTotalAccounts">0</b><span>Active accounts</span></div>
+          <div class="kpi"><b id="adminTotalStorage">0 MB</b><span>Total storage</span></div>
+        </div>
+        <button class="btn-primary" id="adminCreateBtn">+ Create New Account</button>
+      </div>
+      <div class="admin-controls">
+        <input id="acctSearch" type="search" placeholder="Search username or name…">
+        <select id="acctFilter">
+          <option value="all">All</option><option value="active">Active</option><option value="deleted">Deleted</option>
+        </select>
+      </div>
+      <table class="acct-table">
+        <thead><tr><th>Account</th><th>His</th><th>Her</th><th>Username</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="acctRows"></tbody>
+      </table>
+      <div class="admin-pager">
+        <button id="acctPrev" class="btn-ghost sm">← Prev</button>
+        <span id="acctPageInfo"></span>
+        <button id="acctNext" class="btn-ghost sm">Next →</button>
+      </div>
+    </div>
+    <div id="adminView_stats" hidden><h2>Stats</h2><p class="muted">Per-account stats open from each row's 📊 button.</p></div>
+    <div id="adminView_settings" hidden>
+      <h2>Admin Settings</h2>
+      <div class="admin-card">
+        <label>Change admin password<input id="adminNewPass" type="password" placeholder="New password (min 6)"></label>
+        <button class="btn-primary" id="adminPassChange">Update Password</button>
+      </div>
+    </div>
+  </main>
+</section>
 
-<!-- Toasts + FX -->
-<div class="toast-wrap" id="toasts"></div>
-<div id="fx"></div>
+<!-- ============ COUPLE LOGIN ============ -->
+<section id="screen_coupleLogin" class="screen couple-login" hidden>
+  <div class="auth-card couple">
+    <h1>Welcome to Our Corner 💖</h1>
+    <p class="auth-sub">Your private little home, together.</p>
+    <label>Username<input id="coupleUser" type="text" autocapitalize="off"></label>
+    <label>Password<input id="couplePass" type="password"></label>
+    <label class="auth-ck"><input id="rememberMe" type="checkbox"> Remember me</label>
+    <button class="btn-primary block" id="coupleLoginBtn">Login</button>
+    <a href="#" id="forgotPass" class="auth-link">Forgot password?</a>
+    <a href="#" id="toAdminLogin" class="auth-link small">Admin login →</a>
+  </div>
+</section>
 
-<!-- Hidden file inputs -->
-<input type="file" id="filePick" accept="image/*" class="hidden" />
+  <!-- ========== APP SHELL ========== -->
+  <section id="screen_coupleApp" hidden>
+  <div id="app">
 
-<!-- ====== Scripts (vanilla, load order matters) ====== -->
-<script src="js/state.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/home.js"></script>
-<script src="js/messages.js"></script>
-<script src="js/diary.js"></script>
-<script src="js/questions.js"></script>
-<script src="js/games.js"></script>
-<script src="js/checkers.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/pet.js"></script>
-<script src="js/dates.js"></script>
-<script src="js/gallery.js"></script>
-<script src="js/stats.js"></script>
-<script src="js/prayer.js"></script>
-<script src="js/settings.js"></script>
-<script src="app.js"></script>
+    <!-- ===== HOME / DASHBOARD ===== -->
+    <section class="page active" id="page-home" data-page="home">
+      <header class="dash-header">
+        <div>
+          <p class="greeting" id="greeting">Hello, Luke &amp; Sophie!</p>
+          <p class="sub-greeting" id="dateline"></p>
+        </div>
+        <button class="icon-btn" id="nightToggle" title="Toggle night mode">🌙</button>
+      </header>
+
+      <!-- Photo of the Day -->
+      <div class="card potd-card">
+        <p class="potd-label">📸 Photo of the Day</p>
+        <div class="potd-frame" id="potdFrame">
+          <span class="potd-empty" id="potdEmpty">＋</span>
+          <img id="potdImg" alt="Photo of the day" hidden />
+        </div>
+        <input type="text" class="potd-caption" id="potdCaption" placeholder="Add a caption…" maxlength="120" />
+        <input type="file" id="potdInput" accept="image/*" hidden />
+      </div>
+
+      <!-- Mood Picker -->
+      <div class="card">
+        <div class="card-head">
+          <h3>How are you feeling?</h3>
+          <div class="who-toggle" id="moodWhoToggle">
+            <button data-who="luke" class="active">🦂 Luke</button>
+            <button data-who="sophie">🌸 Sophie</button>
+          </div>
+        </div>
+        <div class="mood-scroll" id="moodScroll"></div>
+        <p class="mood-status" id="moodStatus">Pick a mood to share 💞</p>
+      </div>
+
+      <!-- Countdowns -->
+      <div class="card">
+        <div class="card-head">
+          <h3>⏳ Countdowns</h3>
+          <button class="add-btn" id="addCountdown">＋</button>
+        </div>
+        <div class="countdown-scroll" id="countdownScroll"></div>
+      </div>
+
+      <!-- Streaks -->
+      <div class="card">
+        <h3>🔥 Streaks</h3>
+        <div class="streak-list" id="streakList"></div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-grid">
+        <button class="quick-btn" data-go="messages">💌<span>Messages</span></button>
+        <button class="quick-btn" data-go="diary">📖<span>Diary</span></button>
+        <button class="quick-btn" data-go="questions">❓<span>Questions</span></button>
+        <button class="quick-btn" data-go="games">🎮<span>Games</span></button>
+        <button class="quick-btn" data-go="pet">🐕<span>Our Pet</span></button>
+        <button class="quick-btn" data-go="dates">💡<span>Date Ideas</span></button>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <h3>📋 Recent Activity</h3>
+        <ul class="activity-feed" id="activityFeed"><li class="muted">No activity yet — start exploring! 💕</li></ul>
+      </div>
+
+      <!-- secondary nav for the less-frequent sections -->
+      <div class="quick-grid secondary">
+        <button class="quick-btn small" data-go="draw">🎨<span>Draw</span></button>
+        <button class="quick-btn small" data-go="gallery">🖼️<span>Gallery</span></button>
+        <button class="quick-btn small" data-go="stats">📊<span>Stats</span></button>
+        <button class="quick-btn small" data-go="prayer">🙏<span>Prayer</span></button>
+        <button class="quick-btn small" data-go="map">🗺️<span>Love Map</span></button>
+        <button class="quick-btn small" data-go="settings">⚙️<span>Settings</span></button>
+      </div>
+    </section>
+
+    <!-- ===== MESSAGES ===== -->
+    <section class="page" id="page-messages" data-page="messages">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>💌 Messages</h2></div>
+      <input class="search" id="msgSearch" placeholder="🔍 Search messages…" />
+      <div class="msg-list" id="msgList"></div>
+      <div class="composer">
+        <textarea id="msgInput" placeholder="Write something sweet…" rows="1"></textarea>
+        <button class="who-pill" id="msgWho" title="Sending as">🦂</button>
+        <button class="icon-btn" id="msgPhotoBtn" title="Attach photo">🖼️</button>
+        <button class="icon-btn" id="msgVoiceBtn" title="Voice note">🎙️</button>
+        <button class="send-btn" id="msgSend">➤</button>
+        <input type="file" id="msgPhotoInput" accept="image/*" hidden />
+      </div>
+    </section>
+
+    <!-- ===== DIARY ===== -->
+    <section class="page" id="page-diary" data-page="diary">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>📖 Couple Diary</h2></div>
+      <div class="diary-actions">
+        <button class="pill-btn" id="newDiary">✍️ New Entry</button>
+        <button class="pill-btn" id="memoryLane">🎲 Memory Lane</button>
+        <button class="pill-btn" id="exportDiary">📄 Export PDF</button>
+      </div>
+      <div class="diary-list" id="diaryList"></div>
+    </section>
+
+    <!-- ===== DAILY QUESTIONS ===== -->
+    <section class="page" id="page-questions" data-page="questions">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>❓ Daily Questions</h2></div>
+      <div class="card qotw-card">
+        <p class="potd-label">🌟 Question of the Week</p>
+        <p class="qotw-text" id="qotwText"></p>
+      </div>
+      <div class="card question-card">
+        <p class="q-day" id="qDay"></p>
+        <p class="q-text" id="qText"></p>
+        <div class="who-toggle" id="qWhoToggle">
+          <button data-who="luke" class="active">🦂 Luke</button>
+          <button data-who="sophie">🌸 Sophie</button>
+        </div>
+        <textarea id="qAnswer" placeholder="Your answer…" rows="3"></textarea>
+        <label class="check-row"><input type="checkbox" id="qSaveDiary" /> Save to Diary</label>
+        <button class="pill-btn full" id="qSubmit">Submit Answer</button>
+        <div class="q-reveal" id="qReveal" hidden></div>
+        <button class="pill-btn full ghost" id="qNext" hidden>Next Question →</button>
+      </div>
+    </section>
+
+    <!-- ===== GAMES HUB ===== -->
+    <section class="page" id="page-games" data-page="games">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🎮 Games</h2></div>
+      <div class="quick-grid">
+        <button class="quick-btn" data-go="game-wyr">🤔<span>Would You Rather</span></button>
+        <button class="quick-btn" data-go="game-memory">🃏<span>Memory Match</span></button>
+        <button class="quick-btn" data-go="game-war">⚔️<span>War</span></button>
+        <button class="quick-btn" data-go="game-checkers">🔴<span>Checkers</span></button>
+      </div>
+    </section>
+
+    <!-- WOULD YOU RATHER -->
+    <section class="page" id="page-game-wyr" data-page="game-wyr">
+      <div class="page-top"><button class="back" data-go="games">‹</button><h2>🤔 Would You Rather</h2></div>
+      <div class="wyr-stage" id="wyrStage"></div>
+    </section>
+
+    <!-- MEMORY MATCH -->
+    <section class="page" id="page-game-memory" data-page="game-memory">
+      <div class="page-top"><button class="back" data-go="games">‹</button><h2>🃏 Memory Match</h2></div>
+      <p class="center-note" id="memoryNote">Find all the pairs!</p>
+      <div class="memory-grid" id="memoryGrid"></div>
+      <button class="pill-btn full" id="memoryReset">🔄 New Game</button>
+    </section>
+
+    <!-- WAR -->
+    <section class="page" id="page-game-war" data-page="game-war">
+      <div class="page-top"><button class="back" data-go="games">‹</button><h2>⚔️ War</h2></div>
+      <div class="war-stage" id="warStage"></div>
+      <button class="pill-btn full" id="warDraw">Flip Cards</button>
+      <button class="pill-btn full ghost" id="warReset">🔄 Reshuffle</button>
+    </section>
+
+    <!-- CHECKERS -->
+    <section class="page" id="page-game-checkers" data-page="game-checkers">
+      <div class="page-top"><button class="back" data-go="games">‹</button><h2>🔴 Checkers</h2></div>
+      <p class="center-note" id="checkersTurn"></p>
+      <div class="checkers-board" id="checkersBoard"></div>
+      <div class="diary-actions">
+        <button class="pill-btn" id="checkersUndo">↩️ Undo</button>
+        <button class="pill-btn ghost" id="checkersReset">🔄 New Game</button>
+      </div>
+    </section>
+
+    <!-- ===== PET ===== -->
+    <section class="page" id="page-pet" data-page="pet">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🐕 Our Pet</h2></div>
+      <div class="pet-room" id="petRoom">
+        <div class="pet-sprite" id="petSprite">🐶</div>
+        <div class="pet-collar" id="petCollar">L &amp; S</div>
+      </div>
+      <p class="center-note"><span id="petName">Our Puppy</span> · <span id="petStage">Puppy</span> · 🪙 <span id="loveCoins">0</span></p>
+      <div class="pet-bars" id="petBars"></div>
+      <div class="pet-actions">
+        <button class="pill-btn" data-care="feed">🍖 Feed</button>
+        <button class="pill-btn" data-care="bathe">🛁 Bathe</button>
+        <button class="pill-btn" data-care="play">🎾 Play</button>
+        <button class="pill-btn" data-care="sleep">😴 Sleep</button>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>🎁 Gacha</h3><span class="muted">10 🪙 per pull</span></div>
+        <button class="pill-btn full" id="gachaPull">Summon Accessory ✨</button>
+        <div class="gacha-shelf" id="gachaShelf"></div>
+      </div>
+    </section>
+
+    <!-- ===== DATE IDEAS ===== -->
+    <section class="page" id="page-dates" data-page="dates">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>💡 Date Ideas</h2></div>
+      <div class="diary-actions">
+        <button class="pill-btn" id="randomDate">🎲 Random</button>
+        <button class="pill-btn" id="addDate">＋ Add Yours</button>
+      </div>
+      <div class="filter-row" id="dateFilters"></div>
+      <div class="date-list" id="dateList"></div>
+    </section>
+
+    <!-- ===== DRAW ===== -->
+    <section class="page" id="page-draw" data-page="draw">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🎨 Draw</h2></div>
+      <canvas id="drawCanvas" class="draw-canvas"></canvas>
+      <div class="draw-tools" id="drawTools">
+        <input type="color" id="drawColor" value="#D4A5A5" />
+        <button class="tool-btn active" data-tool="pen">✏️</button>
+        <button class="tool-btn" data-tool="brush">🖌️</button>
+        <button class="tool-btn" data-tool="eraser">🩹</button>
+        <button class="tool-btn" data-stamp="❤️">❤️</button>
+        <button class="tool-btn" data-stamp="⭐">⭐</button>
+        <button class="tool-btn" data-stamp="💋">💋</button>
+        <button class="tool-btn" id="drawClear">🗑️</button>
+      </div>
+      <div class="diary-actions">
+        <button class="pill-btn" id="saveForLuke">💾 For Luke</button>
+        <button class="pill-btn" id="saveForSophie">💾 For Sophie</button>
+        <button class="pill-btn ghost" id="exportDraw">⬇️ Export</button>
+      </div>
+      <div class="draw-gallery" id="drawGallery"></div>
+    </section>
+
+    <!-- ===== GALLERY ===== -->
+    <section class="page" id="page-gallery" data-page="gallery">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🖼️ Photo Gallery</h2></div>
+      <div class="diary-actions">
+        <button class="pill-btn" id="addPhoto">📷 Add Photo</button>
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+      <input type="file" id="galleryInput" accept="image/*" hidden />
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="page" id="page-stats" data-page="stats">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>📊 Relationship Stats</h2></div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="card">
+        <h3>Mood Trend</h3>
+        <canvas id="moodChart" height="120"></canvas>
+      </div>
+    </section>
+
+    <!-- ===== PRAYER ===== -->
+    <section class="page" id="page-prayer" data-page="prayer">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🙏 Prayer Tracker</h2></div>
+      <div class="card">
+        <p class="potd-label">📜 Scripture of the Day</p>
+        <p class="scripture" id="scripture"></p>
+      </div>
+      <div class="card">
+        <label class="check-row big"><input type="checkbox" id="prayedToday" /> 🙏 Prayed Together Today</label>
+        <p class="center-note">Streak: <span id="prayerStreak">0</span> days 🔥</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Prayer Wall</h3><button class="add-btn" id="addPrayer">＋</button></div>
+        <div class="prayer-list" id="prayerList"></div>
+      </div>
+    </section>
+
+    <!-- ===== LOVE MAP ===== -->
+    <section class="page" id="page-map" data-page="map">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🗺️ Love Map</h2></div>
+      <div class="card">
+        <div class="love-map" id="loveMap">
+          <div class="map-dot luke" id="dotLuke">🦂</div>
+          <div class="map-line" id="mapLine"></div>
+          <div class="map-dot sophie" id="dotSophie">🌸</div>
+        </div>
+        <p class="center-note" id="distanceText">Set your cities in Settings 💞</p>
+      </div>
+      <div class="card">
+        <label>🦂 Luke's city</label>
+        <input id="lukeCity" class="search" placeholder="e.g. Arkadelphia, AR" />
+        <label>🌸 Sophie's city</label>
+        <input id="sophieCity" class="search" placeholder="e.g. London, UK" />
+        <button class="pill-btn full" id="saveCities">Save Locations</button>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section class="page" id="page-settings" data-page="settings">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>⚙️ Settings</h2></div>
+      <div class="card">
+        <label>🐕 Pet name</label>
+        <input id="setPetName" class="search" />
+        <label>🦂 Luke's avatar</label>
+        <input id="setLukeAvatar" class="search" maxlength="2" />
+        <label>🌸 Sophie's avatar</label>
+        <input id="setSophieAvatar" class="search" maxlength="2" />
+        <button class="pill-btn full" id="saveSettings">Save</button>
+      </div>
+      <div class="card">
+        <label class="check-row"><input type="checkbox" id="setNotify" /> 🔔 Daily reminders</label>
+      </div>
+      <div class="card">
+        <h3>Data</h3>
+        <button class="pill-btn full" id="exportData">⬆️ Export Data (JSON)</button>
+        <button class="pill-btn full" id="importDataBtn">⬇️ Import Data</button>
+        <input type="file" id="importDataInput" accept="application/json" hidden />
+        <button class="pill-btn full danger" id="resetData">🗑️ Reset Everything</button>
+      </div>
+      <p class="center-note muted">Our Corner · made with 💖</p>
+    </section>
+
+  </div>
+  </section>
+
+  <!-- ========== MODAL ========== -->
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- ========== LIGHTBOX ========== -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lb-nav prev" id="lbPrev">‹</button>
+    <img id="lbImg" alt="" />
+    <button class="lb-nav next" id="lbNext">›</button>
+    <button class="lb-close" id="lbClose">✕</button>
+    <p class="lb-caption" id="lbCaption"></p>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- ========== CONFETTI CANVAS ========== -->
+  <canvas id="confettiCanvas" class="confetti"></canvas>
+
+  <script src="app.js"></script>
 </body>
 </html>
