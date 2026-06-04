@@ -125,7 +125,134 @@ const IndexedDBAdapter = (() => {
 /* ── To swap in Supabase later, implement an object with the SAME methods:
    const SupabaseAdapter = { async init(){...}, async allAccounts(){...}, ... };
    then change the next line. Nothing else in the app needs editing.        */
-const ACTIVE_ADAPTER = IndexedDBAdapter;
+/* ===================================================================
+   OUR CORNER — supabase-adapter.js
+   Drop-in backend that makes the app SYNC across devices.
+   Implements the same interface as IndexedDBAdapter, so no page/UI
+   code changes — only the ACTIVE_ADAPTER line below switches over.
+
+   Storage model (per your choice: one row per data key):
+     • accounts        -> (account_id, username, data jsonb)   one row/couple
+     • account_data    -> (account_id, key, value jsonb)       one row/key
+   Media (photos/drawings, base64) live in account_data under keys
+   prefixed "media::". Admin creds live under account_id '__meta__'.
+
+   SECURITY NOTE (unchanged): login logic is in the browser and the
+   publishable key is public, so this is app-level access, not true
+   per-couple isolation. Fine for friends; not airtight for secrets.
+   =================================================================== */
+'use strict';
+
+const SUPABASE_URL = 'https://mkurdowpyvdvahmplmta.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_36A4z6wkzP5Oq0GIhLxzjw_xjbPWEPu';
+
+const _lastLoaded = {};
+const SupabaseAdapter = (() => {
+  const REST = SUPABASE_URL + '/rest/v1';
+  const HEADERS = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json'
+  };
+  const META_ID = '__meta__';
+
+  async function sb(path, opts = {}) {
+    const res = await fetch(REST + path, { ...opts, headers: { ...HEADERS, ...(opts.headers || {}) } });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error('Supabase ' + res.status + ': ' + txt);
+    }
+    if (res.status === 204) return null;
+    const t = await res.text();
+    return t ? JSON.parse(t) : null;
+  }
+
+  // upsert one (account_id,key,value) row
+  async function putRow(accountId, key, value) {
+    await sb('/account_data?on_conflict=account_id,key', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ account_id: accountId, key, value }])
+    });
+  }
+  async function getRow(accountId, key) {
+    const rows = await sb('/account_data?account_id=eq.' + encodeURIComponent(accountId) +
+                          '&key=eq.' + encodeURIComponent(key) + '&select=value');
+    return rows && rows.length ? rows[0].value : null;
+  }
+  async function delRow(accountId, key) {
+    await sb('/account_data?account_id=eq.' + encodeURIComponent(accountId) +
+             '&key=eq.' + encodeURIComponent(key),
+             { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+  }
+
+  return {
+    async init() { return true; },
+
+    /* ---- admin creds / app meta (stored as one row under __meta__) ---- */
+    async metaGet(k) { return await getRow(META_ID, k); },
+    async metaSet(k, v) { await putRow(META_ID, k, v); },
+
+    /* ---- accounts ---- */
+    async allAccounts() {
+      const rows = await sb('/accounts?select=data&order=username');
+      return (rows || []).map(r => r.data).filter(Boolean);
+    },
+    async putAccount(acct) {
+      await sb('/accounts?on_conflict=account_id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify([{ account_id: acct.accountId, username: acct.username, data: acct }])
+      });
+    },
+    async deleteAccountHard(accountId) {
+      await sb('/account_data?account_id=eq.' + encodeURIComponent(accountId),
+               { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+      await sb('/accounts?account_id=eq.' + encodeURIComponent(accountId),
+               { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+    },
+
+    /* ---- per-account structured data (one row per key) ---- */
+    async loadAccount(accountId) {
+      const rows = await sb('/account_data?account_id=eq.' + encodeURIComponent(accountId) +
+                            '&select=key,value');
+      const out = {};
+      (rows || []).forEach(r => { if (!String(r.key).startsWith('media::')) out[r.key] = r.value; });
+      // remember what we loaded so saveAccount only writes changed keys
+      _lastLoaded[accountId] = JSON.stringify(out);
+      return out;
+    },
+    async saveAccount(accountId, dataObj) {
+      // diff against last snapshot; upsert only changed keys
+      let prev = {};
+      try { prev = JSON.parse(_lastLoaded[accountId] || '{}'); } catch {}
+      const tasks = [];
+      for (const k of Object.keys(dataObj)) {
+        if (JSON.stringify(dataObj[k]) !== JSON.stringify(prev[k]))
+          tasks.push(putRow(accountId, k, dataObj[k]));
+      }
+      for (const k of Object.keys(prev)) {
+        if (!(k in dataObj)) tasks.push(delRow(accountId, k));
+      }
+      await Promise.all(tasks);
+      _lastLoaded[accountId] = JSON.stringify(dataObj);
+    },
+
+    /* ---- media blobs (base64) stored as account_data rows ---- */
+    async blobPut(accountId, key, b64) { await putRow(accountId, 'media::' + key, b64); },
+    async blobGet(accountId, key) { return await getRow(accountId, 'media::' + key); },
+    async blobDel(accountId, key) { await delRow(accountId, 'media::' + key); },
+    async blobBytesForAccount(accountId) {
+      const rows = await sb('/account_data?account_id=eq.' + encodeURIComponent(accountId) +
+                            '&key=like.media::*&select=value');
+      return (rows || []).reduce((n, r) => n + (r.value ? String(r.value).length : 0), 0);
+    }
+  };
+})();
+
+
+/* ===== Backend switched to Supabase (sync across devices) ===== */
+const ACTIVE_ADAPTER = SupabaseAdapter;
 
 /* ===================================================================
    Store — what the whole app actually calls.
