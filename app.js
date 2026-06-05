@@ -1466,7 +1466,18 @@ function pos(canvas,e){
 }
 function bindDrawEvents(canvas) {
   const start=e=>{ e.preventDefault();
-    if (drawStamp){ const {x,y}=pos(canvas,e); drawCtx.font='32px serif'; drawCtx.fillText(drawStamp,x-16,y+12); return; }
+    if (drawStamp){
+      const {x,y}=pos(canvas,e);
+      // Center the emoji on the tap point so it renders fully (no clipping).
+      drawCtx.save();
+      drawCtx.fillStyle='#000';            // reset (eraser may have left white)
+      drawCtx.textAlign='center';
+      drawCtx.textBaseline='middle';
+      drawCtx.font='40px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif';
+      drawCtx.fillText(drawStamp, x, y);
+      drawCtx.restore();
+      return;
+    }
     drawing=true; const {x,y}=pos(canvas,e); drawCtx.beginPath(); drawCtx.moveTo(x,y);
   };
   const move=e=>{ if(!drawing||drawStamp) return; e.preventDefault();
