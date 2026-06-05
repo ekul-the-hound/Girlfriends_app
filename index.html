@@ -107,8 +107,13 @@
         <div class="potd-frame" id="potdFrame">
           <span class="potd-empty" id="potdEmpty">＋</span>
           <img id="potdImg" alt="Photo of the day" hidden />
+          <button class="potd-edit" id="potdEdit" hidden title="Change photo">✏️</button>
         </div>
+        <p class="potd-meta" id="potdMeta" hidden></p>
         <input type="text" class="potd-caption" id="potdCaption" placeholder="Add a caption…" maxlength="120" />
+        <div class="potd-actions">
+          <button class="pill-btn ghost sm" id="potdHistoryBtn">🕑 Photo History</button>
+        </div>
         <input type="file" id="potdInput" accept="image/*" hidden />
       </div>
 

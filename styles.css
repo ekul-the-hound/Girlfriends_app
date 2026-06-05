@@ -525,17 +525,28 @@ body.night .couple-login { background:linear-gradient(160deg,#241b2e,#1c1726); }
 .muted { color:var(--muted); } .center { text-align:center; }
 @media(max-width:560px){ .admin-sidebar{width:64px;} .admin-sidebar h2,.admin-sidebar nav button span{display:none;} }
 
-/* ===== v3.1 daily-questions additions ===== */
-.q-actions-row { display:flex; gap:8px; margin-bottom:12px; }
-.q-actions-row .pill-btn { flex:1; }
-.pill-btn.sm { padding:8px 12px; font-size:13px; }
-.q-custom-badge { display:inline-block; font-size:11px; font-weight:700; color:var(--rose);
-  background:rgba(212,165,165,.15); border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:middle; }
-.q-answer-box .qa-q { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:6px; }
-.q-manage-list { display:flex; flex-direction:column; gap:8px; max-height:50vh; overflow-y:auto; margin:8px 0; }
-.q-manage-row { display:flex; align-items:center; gap:10px; justify-content:space-between;
-  background:var(--cream); border-radius:12px; padding:10px 12px; font-size:14px; }
-.q-cat-tag { font-style:normal; font-size:10px; font-weight:800; text-transform:uppercase;
-  letter-spacing:.04em; color:var(--sage); margin-right:6px; }
-.q-edit-btn { background:none; border:none; cursor:pointer; font-size:16px; flex:none; }
-.modal .pill-btn.danger { background:#d98a8a; color:#fff; }
+/* ===== v3 game turn-sync UI ===== */
+.device-who-bar { display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom:10px; }
+.device-who-bar .dw-label { font-family:'Nunito'; font-weight:800; font-size:15px; }
+.device-who-bar .dw-pick { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+.dw-btn { border:1.5px solid var(--line); background:var(--card); border-radius:999px;
+  padding:3px 12px; font-size:12px; font-weight:700; cursor:pointer; color:var(--char); }
+.dw-btn.on { background:var(--rose); color:#fff; border-color:var(--rose); }
+.checkers-board.locked, .memory-grid.locked { opacity:.6; pointer-events:none; filter:grayscale(.3); }
+.mem-scores { font-size:13px; font-weight:700; color:var(--sage); margin:4px 0; }
+/* ===== Photo of the Day: multi-update additions ===== */
+.potd-frame { position:relative; }
+.potd-edit { position:absolute; top:6px; right:6px; width:30px; height:30px; border:none;
+  border-radius:50%; background:rgba(0,0,0,.45); color:#fff; font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.potd-meta { font-size:11px; color:var(--muted); text-align:center; margin-top:6px; }
+.potd-actions { display:flex; justify-content:center; margin-top:8px; }
+.pill-btn.sm { padding:7px 12px; font-size:12px; }
+.potd-history-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:10px 0; max-height:60vh; overflow-y:auto; }
+.potd-hist-cell { position:relative; border-radius:12px; overflow:hidden; cursor:pointer; background:var(--cream); }
+.potd-hist-cell img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.poth-badge { position:absolute; top:4px; left:4px; background:var(--rose); color:#fff;
+  font-size:9px; font-weight:800; padding:2px 6px; border-radius:999px; }
+.poth-info { display:flex; flex-direction:column; padding:4px 6px; }
+.poth-date { font-size:10px; font-weight:700; color:var(--char); }
+.poth-by { font-size:9px; color:var(--muted); }

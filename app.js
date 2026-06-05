@@ -459,8 +459,8 @@ function go(page) {
   if (page === 'diary') renderDiary();
   if (page === 'questions') renderQuestion();
   if (page === 'game-wyr') renderWYR();
-  if (page === 'game-memory') startMemory();
-  if (page === 'game-war') initWar();
+  if (page === 'game-memory') startMemoryOrResume();
+  if (page === 'game-war') initWar(true);
   if (page === 'game-checkers') renderCheckers();
   if (page === 'pet') renderPet();
   if (page === 'dates') renderDates();
@@ -497,35 +497,124 @@ function renderDashboard() {
   renderActivity();
 }
 
-/* ---------- Photo of the Day ---------- */
+/* ---------- Photo of the Day (multi-update, preserves history) ---------- */
+function potdUploaderName(who) { return who==='luke' ? HIS() : who==='sophie' ? HER() : 'Someone'; }
+function potdTimeStr(ts) {
+  if (!ts) return '';
+  try { return new Date(ts).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+  catch { return ''; }
+}
 function renderPOTD() {
   const data = DB.get(K.potd, null);
   const img = $('#potdImg'), empty = $('#potdEmpty'), cap = $('#potdCaption');
+  const edit = $('#potdEdit'), meta = $('#potdMeta');
   if (data && data.img) {
     img.src = data.img; img.hidden = false; empty.style.display = 'none';
     cap.value = data.caption || '';
+    if (edit) edit.hidden = false;
+    if (meta) {
+      if (data.uploadedBy || data.uploadedAt) {
+        meta.hidden = false;
+        const by = data.uploadedBy ? `Uploaded by ${potdUploaderName(data.uploadedBy)}` : 'Uploaded';
+        const at = data.uploadedAt ? ` at ${potdTimeStr(data.uploadedAt)}` : '';
+        meta.textContent = by + at;
+      } else meta.hidden = true;
+    }
   } else {
     img.hidden = true; empty.style.display = 'block'; cap.value = '';
+    if (edit) edit.hidden = true;
+    if (meta) meta.hidden = true;
   }
 }
-$('#potdFrame').addEventListener('click', () => {
+
+/* Move the CURRENT photo-of-the-day into the gallery so it's never lost. */
+function archiveCurrentPOTD() {
+  const cur = DB.get(K.potd, null);
+  if (!cur || !cur.img) return;
+  const photos = DB.get(K.photos, []);
+  const dateStr = cur.date || todayStr();
+  photos.unshift({
+    id: cur.uploadedAt || now(),
+    img: cur.img,
+    caption: cur.caption || '',
+    fav: false,
+    folder: 'photoOfDay',
+    tags: ['Photo of the Day - ' + dateStr],
+    isPhotoOfDay: false,           // it WAS, but is now archived
+    photoOfDayDate: dateStr,
+    uploadedBy: cur.uploadedBy || null,
+    uploadedAt: cur.uploadedAt || now(),
+    t: cur.uploadedAt || now()
+  });
+  DB.set(K.photos, photos.slice(0, 200));
+}
+
+/* Open the upload flow (used by + , by Edit, and by tapping empty frame). */
+function potdStartUpload() { $('#potdInput').click(); }
+
+$('#potdFrame').addEventListener('click', (e) => {
+  // Edit button handled separately; tapping the photo opens full-screen,
+  // tapping the empty frame starts an upload.
+  if (e.target.closest('#potdEdit')) return;
   const data = DB.get(K.potd, null);
   if (data && data.img) openLightbox([{img:data.img, caption:data.caption}], 0);
-  else $('#potdInput').click();
+  else potdStartUpload();
 });
+const _potdEditBtn = $('#potdEdit');
+if (_potdEditBtn) _potdEditBtn.addEventListener('click', (e) => { e.stopPropagation(); potdStartUpload(); });
+
 $('#potdInput').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
   compressImage(file, 800, dataUrl => {
-    DB.set(K.potd, { img:dataUrl, caption:'', date:todayStr() });
+    // preserve the previous photo of the day into the gallery first
+    archiveCurrentPOTD();
+    const who = (typeof deviceWho === 'function' ? deviceWho() : null);
+    DB.set(K.potd, {
+      img: dataUrl, caption: '', date: todayStr(),
+      uploadedBy: who, uploadedAt: now()
+    });
     renderPOTD();
     bumpStreak('photo');
-    logActivity('📸 Added a new Photo of the Day');
-    toast('Photo of the Day set! 📸');
+    logActivity(`📸 ${potdUploaderName(who)} set a new Photo of the Day`);
+    toast('Photo of the Day updated! 📸');
+    e.target.value = ''; // allow re-selecting the same file again later
   });
 });
 $('#potdCaption').addEventListener('change', e => {
   const data = DB.get(K.potd, null); if (!data) return;
   data.caption = e.target.value; DB.set(K.potd, data);
+});
+
+/* ---------- Photo of the Day: history ---------- */
+function potdHistory() {
+  const photos = DB.get(K.photos, []).filter(p => p.folder === 'photoOfDay');
+  const cur = DB.get(K.potd, null);
+  const list = [];
+  if (cur && cur.img) list.push({
+    img: cur.img, caption: cur.caption || '', current: true,
+    photoOfDayDate: cur.date || todayStr(), uploadedBy: cur.uploadedBy, uploadedAt: cur.uploadedAt
+  });
+  return list.concat(photos);
+}
+const _potdHistBtn = $('#potdHistoryBtn');
+if (_potdHistBtn) _potdHistBtn.addEventListener('click', () => {
+  const hist = potdHistory();
+  openModal(`
+    <h3>📸 Photo of the Day History</h3>
+    ${hist.length ? `<div class="potd-history-grid">${hist.map((p,i)=>`
+      <div class="potd-hist-cell" data-poth="${i}">
+        <img src="${p.img}" alt="">
+        ${p.current?'<span class="poth-badge">Today</span>':''}
+        <div class="poth-info">
+          <span class="poth-date">${p.photoOfDayDate||''}</span>
+          <span class="poth-by">${p.uploadedBy?potdUploaderName(p.uploadedBy):''}</span>
+        </div>
+      </div>`).join('')}</div>`
+      : '<p class="muted">No photo-of-the-day history yet. Upload one to start! 📸</p>'}
+    <div class="modal-actions"><button class="pill-btn" data-close>Close</button></div>
+  `);
+  const imgs = hist.map(p=>({img:p.img, caption:p.caption||''}));
+  $$('#modal [data-poth]').forEach(c=>c.addEventListener('click', ()=>openLightbox(imgs, +c.dataset.poth)));
 });
 
 /* ---------- Mood picker ---------- */
@@ -1084,79 +1173,238 @@ $('#wyrStage').addEventListener('click', e => {
 });
 
 /* ===================================================================
-   GAME: MEMORY MATCH
+   GAME: MEMORY MATCH  (turn-based, persistent)
+   On a match you keep your turn; on a miss, turn passes.
    =================================================================== */
 const MEM_ICONS = ['❤️','⭐','🌸','🦂','🌙','🔥','🎀','🍓'];
-let memFlipped=[], memMatched=0, memLock=false, memMoves=0;
-function startMemory() {
+let memLock=false;
+function memFreshState() {
   const deck = [...MEM_ICONS, ...MEM_ICONS]
     .map(v=>({v, r:Math.random()})).sort((a,b)=>a.r-b.r).map(x=>x.v);
-  memFlipped=[]; memMatched=0; memLock=false; memMoves=0;
-  $('#memoryNote').textContent = 'Find all the pairs!';
-  $('#memoryGrid').innerHTML = deck.map((v,i)=>
-    `<div class="mem-card" data-i="${i}" data-v="${v}"><span>${v}</span></div>`).join('');
+  return { deck, flipped:[], matched:[], moves:{luke:0,sophie:0}, scores:{luke:0,sophie:0}, note:'Find all the pairs!' };
+}
+function startMemory() {
+  saveGameState('memory', memFreshState(), 'luke', []);
+  renderMemoryFromState();
+}
+function renderMemoryFromState() {
+  let gs = loadGameState('memory');
+  if (!gs || !gs.state || !gs.state.deck) { startMemory(); return; }
+  const st = gs.state;
+  const isOver = st.matched.length === MEM_ICONS.length;
+  $('#memoryNote').innerHTML = deviceWhoBar('memory') +
+    `<div class="mem-scores">${HIS()}: ${st.scores.luke} · ${HER()}: ${st.scores.sophie}</div>` +
+    `<div>${isOver ? `🎉 Game over! ${st.scores.luke===st.scores.sophie?'Tie!':(st.scores.luke>st.scores.sophie?HIS():HER())+' wins!'}` : escapeHtml(st.note)}</div>`;
+  $('#memoryGrid').innerHTML = st.deck.map((v,i)=>{
+    const isFlipped = st.flipped.includes(i) || st.matched.includes(i);
+    return `<div class="mem-card ${st.flipped.includes(i)?'flipped':''} ${st.matched.includes(i)?'matched':''}" data-i="${i}">
+      <span>${isFlipped ? v : ''}</span></div>`;
+  }).join('');
+  $('#memoryGrid').classList.toggle('locked', !checkTurn('memory'));
+}
+function startMemoryOrResume() {
+  const gs = loadGameState('memory');
+  if (gs && gs.state && gs.state.deck) renderMemoryFromState();
+  else startMemory();
 }
 $('#memoryReset').addEventListener('click', startMemory);
 $('#memoryGrid').addEventListener('click', e => {
-  const card = e.target.closest('.mem-card');
-  if (!card || memLock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-  card.classList.add('flipped');
-  memFlipped.push(card);
-  if (memFlipped.length === 2) {
-    memMoves++; memLock = true;
-    const [a,b] = memFlipped;
-    if (a.dataset.v === b.dataset.v) {
-      setTimeout(()=>{ a.classList.add('matched'); b.classList.add('matched');
-        memFlipped=[]; memLock=false; memMatched++;
-        if (memMatched === MEM_ICONS.length) {
-          $('#memoryNote').textContent = `🎉 Done in ${memMoves} moves!`;
-          confetti(); logActivity('🃏 Won a Memory Match game'); addCoins(5);
-        }
-      }, 500);
-    } else {
-      setTimeout(()=>{ a.classList.remove('flipped'); b.classList.remove('flipped');
-        memFlipped=[]; memLock=false; }, 800);
-    }
+  const card = e.target.closest('.mem-card'); if (!card || memLock) return;
+  if (!checkTurn('memory')) { toast(`Waiting for ${currentPlayer('memory')==='luke'?HIS():HER()}`); return; }
+  const gs = loadGameState('memory'); const st = gs.state;
+  const i = +card.dataset.i;
+  if (st.flipped.includes(i) || st.matched.includes(i) || st.flipped.length>=2) return;
+  st.flipped.push(i);
+  const cp = gs.currentPlayer;
+  if (st.flipped.length < 2) { saveGameState('memory', st, cp, gs.turnHistory); renderMemoryFromState(); return; }
+  // two flipped → evaluate
+  st.moves[cp] = (st.moves[cp]||0)+1;
+  const [a,b] = st.flipped;
+  saveGameState('memory', st, cp, gs.turnHistory); renderMemoryFromState();
+  memLock = true;
+  if (st.deck[a] === st.deck[b]) {
+    setTimeout(()=>{
+      const g2 = loadGameState('memory'); const s2 = g2.state;
+      s2.matched.push(a,b); s2.flipped=[]; s2.scores[cp]=(s2.scores[cp]||0)+1;
+      let done = s2.matched.length===MEM_ICONS.length;
+      saveGameState('memory', s2, cp, g2.turnHistory); // match → keep turn
+      memLock=false; renderMemoryFromState();
+      if (done) { confetti(); logActivity('🃏 Finished a Memory Match game'); addCoins(5); }
+    }, 500);
+  } else {
+    setTimeout(()=>{
+      const g2 = loadGameState('memory'); const s2 = g2.state;
+      s2.flipped=[];
+      const next = cp==='luke'?'sophie':'luke';
+      saveGameState('memory', s2, next, g2.turnHistory); // miss → pass turn
+      memLock=false; renderMemoryFromState();
+    }, 850);
   }
 });
 
 /* ===================================================================
-   GAME: WAR
+   GAME: WAR  (turn-based: each player flips one card, then compare)
    =================================================================== */
-let warDeck={luke:[],sophie:[]};
 function makeDeck() {
   const d=[]; for (let s=0;s<4;s++) for (let r=2;r<=14;r++) d.push({r, s});
   for (let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
   return d;
 }
-function initWar() {
-  const full = makeDeck();
-  warDeck = { luke: full.slice(0,26), sophie: full.slice(26) };
-  $('#warStage').innerHTML = `<p class="war-msg" id="warMsg">Flip to begin! ⚔️</p>
-    <div class="war-row">
-      <div class="war-side"><h4>${HIS()}</h4><div class="war-card-face" id="warL">?</div><div class="war-count" id="warLC">26 cards</div></div>
-      <div class="war-side"><h4>${HER()}</h4><div class="war-card-face" id="warS">?</div><div class="war-count" id="warSC">26 cards</div></div>
-    </div>`;
-}
 const SUITS=['♠','♥','♦','♣'];
 function cardFace(c){ const names={11:'J',12:'Q',13:'K',14:'A'}; return (names[c.r]||c.r)+SUITS[c.s]; }
+
+function warFreshState() {
+  const full = makeDeck();
+  return { luke: full.slice(0,26), sophie: full.slice(26), flip:{luke:null,sophie:null}, msg:'Flip to begin! ⚔️' };
+}
+function initWar(keepState) {
+  let gs = loadGameState('war');
+  if (!keepState || !gs || !gs.state || !gs.state.luke) {
+    saveGameState('war', warFreshState(), 'luke', []);
+    gs = loadGameState('war');
+  }
+  renderWar();
+}
+function renderWar() {
+  const gs = loadGameState('war'); if (!gs) { initWar(); return; }
+  const st = gs.state;
+  const lFace = st.flip.luke ? cardFace(st.flip.luke) : '?';
+  const sFace = st.flip.sophie ? cardFace(st.flip.sophie) : '?';
+  const lRed = st.flip.luke && (st.flip.luke.s===1||st.flip.luke.s===2);
+  const sRed = st.flip.sophie && (st.flip.sophie.s===1||st.flip.sophie.s===2);
+  $('#warStage').innerHTML = `
+    ${deviceWhoBar('war')}
+    <p class="war-msg" id="warMsg">${escapeHtml(st.msg)}</p>
+    <div class="war-row">
+      <div class="war-side"><h4>${HIS()}</h4><div class="war-card-face ${lRed?'red':'black'}" id="warL">${lFace}</div><div class="war-count" id="warLC">${st.luke.length} cards</div></div>
+      <div class="war-side"><h4>${HER()}</h4><div class="war-card-face ${sRed?'red':'black'}" id="warS">${sFace}</div><div class="war-count" id="warSC">${st.sophie.length} cards</div></div>
+    </div>`;
+}
 $('#warDraw').addEventListener('click', () => {
-  if (!warDeck.luke.length || !warDeck.sophie.length) { initWar(); return; }
-  const l = warDeck.luke.shift(), s = warDeck.sophie.shift();
-  const lEl=$('#warL'), sEl=$('#warS');
-  lEl.textContent=cardFace(l); lEl.className='war-card-face '+(l.s===1||l.s===2?'red':'black');
-  sEl.textContent=cardFace(s); sEl.className='war-card-face '+(s.s===1||s.s===2?'red':'black');
-  let pot=[l,s], msg;
-  if (l.r>s.r){ warDeck.luke.push(...pot); msg=`${HIS()} wins the round!`; }
-  else if (s.r>l.r){ warDeck.sophie.push(...pot); msg=`${HER()} wins the round!`; }
-  else { msg='⚔️ WAR! (tie — pot splits)'; warDeck.luke.push(l); warDeck.sophie.push(s); }
-  $('#warMsg').textContent = msg;
-  $('#warLC').textContent = warDeck.luke.length+' cards';
-  $('#warSC').textContent = warDeck.sophie.length+' cards';
-  if (!warDeck.luke.length){ $('#warMsg').textContent=`${HER()} wins the game! 🎉`; confetti(); }
-  if (!warDeck.sophie.length){ $('#warMsg').textContent=`${HIS()} wins the game! 🎉`; confetti(); }
+  let gs = loadGameState('war'); if (!gs || !gs.state || !gs.state.luke) { initWar(); gs = loadGameState('war'); }
+  const st = gs.state;
+  const cp = gs.currentPlayer;             // whose flip is pending
+  if (!checkTurn('war')) { toast(`Waiting for ${cp==='luke'?HIS():HER()} to flip`); return; }
+  if (!st.luke.length || !st.sophie.length) { initWar(); return; }
+
+  // current player flips their card
+  st.flip[cp] = st[cp][0];
+  // if the other hasn't flipped yet, pass turn to them
+  const other = cp==='luke' ? 'sophie' : 'luke';
+  if (!st.flip[other]) {
+    st.msg = `${cp==='luke'?HIS():HER()} flipped. ${other==='luke'?HIS():HER()}'s turn to flip.`;
+    saveGameState('war', st, other, gs.turnHistory);
+    renderWar(); return;
+  }
+  // both flipped → resolve the round
+  const l = st.luke.shift(), s = st.sophie.shift();
+  st.flip = { luke:null, sophie:null };
+  let msg;
+  if (l.r>s.r){ st.luke.push(l,s); msg=`${HIS()} wins the round! (${cardFace(l)} vs ${cardFace(s)})`; }
+  else if (s.r>l.r){ st.sophie.push(l,s); msg=`${HER()} wins the round! (${cardFace(s)} vs ${cardFace(l)})`; }
+  else { msg='⚔️ WAR! (tie — pot splits)'; st.luke.push(l); st.sophie.push(s); }
+  st.msg = msg;
+  let winner = 'luke';
+  if (!st.luke.length){ st.msg=`${HER()} wins the game! 🎉`; confetti(); }
+  if (!st.sophie.length){ st.msg=`${HIS()} wins the game! 🎉`; confetti(); }
+  const hist = (gs.turnHistory||[]).concat([{ round:true, l:cardFace(l), s:cardFace(s), timestamp:now() }]);
+  // next round starts with luke flipping again
+  saveGameState('war', st, 'luke', hist);
+  renderWar();
 });
-$('#warReset').addEventListener('click', initWar);
+$('#warReset').addEventListener('click', () => initWar());
+
+/* ===================================================================
+   GAME SYNC LAYER (Build A: turn logic + persistence, syncs on refresh)
+   Unified gameStates store in IndexedDB (via DB->Store->Supabase).
+   Realtime push can be layered on later by subscribing to changes and
+   calling the game's render fn — the save/load seam is ready for it.
+   =================================================================== */
+const K_GAMESTATES = 'ourCorner_gameStates';
+
+/* Which partner is on THIS device? Saved per-device so the turn
+   indicator can say "Your Turn" vs "Waiting for ...". */
+function deviceWho() {
+  let w = null;
+  try { w = localStorage.getItem('ourCorner_deviceWho'); } catch {}
+  return (w==='luke'||w==='sophie') ? w : null;
+}
+function setDeviceWho(w) { try { localStorage.setItem('ourCorner_deviceWho', w); } catch {} ; refreshTurnIndicators(); }
+
+/* gameStates: { [gameType]: { state, currentPlayer, turnHistory, lastUpdated } } */
+function allGameStates() { return DB.get(K_GAMESTATES, {}); }
+function loadGameState(gameType) {
+  const g = allGameStates();
+  return g[gameType] || null;
+}
+function saveGameState(gameType, state, currentPlayer, turnHistory) {
+  const g = allGameStates();
+  g[gameType] = {
+    gameStateId: gameType + '_' + (g[gameType]?.gameStateId?.split('_')[1] || now()),
+    accountId: (window.App && App.account) ? App.account.accountId : null,
+    gameType, state,
+    currentPlayer: currentPlayer || g[gameType]?.currentPlayer || 'luke',
+    turnHistory: turnHistory || g[gameType]?.turnHistory || [],
+    lastUpdated: now()
+  };
+  DB.set(K_GAMESTATES, g);
+}
+function switchTurn(gameType) {
+  const g = allGameStates();
+  if (!g[gameType]) return;
+  g[gameType].currentPlayer = g[gameType].currentPlayer === 'luke' ? 'sophie' : 'luke';
+  g[gameType].lastUpdated = now();
+  DB.set(K_GAMESTATES, g);
+  return g[gameType].currentPlayer;
+}
+function currentPlayer(gameType) {
+  return loadGameState(gameType)?.currentPlayer || 'luke';
+}
+/* true if it's THIS device's partner's turn. If device identity not set,
+   returns true (so single-device pass-and-play still works freely). */
+function checkTurn(gameType) {
+  const who = deviceWho();
+  if (!who) return true;
+  return currentPlayer(gameType) === who;
+}
+/* Standard turn-indicator text + whether input should be allowed */
+function turnText(gameType) {
+  const cp = currentPlayer(gameType);
+  const cpName = cp==='luke' ? HIS() : HER();
+  const who = deviceWho();
+  if (!who) return `${cpName}'s turn`;            // shared-device mode
+  return checkTurn(gameType) ? '🟢 Your Turn' : `⏳ Waiting for ${cpName}…`;
+}
+/* Re-render the turn indicator on whatever game page is showing */
+function refreshTurnIndicators() {
+  if ($('#page-game-checkers')?.classList.contains('active')) renderCheckers();
+}
+
+/* A reusable "who is on this device?" chooser shown atop each game */
+function deviceWhoBar(gameType) {
+  const who = deviceWho();
+  return `<div class="device-who-bar">
+    <span class="dw-label">${turnText(gameType)}</span>
+    <span class="dw-pick">I'm:
+      <button class="dw-btn ${who==='luke'?'on':''}" data-dwwho="luke">${HIS()}</button>
+      <button class="dw-btn ${who==='sophie'?'on':''}" data-dwwho="sophie">${HER()}</button>
+    </span>
+  </div>`;
+}
+/* delegated handler for all "I'm Luke/Sophie" buttons */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-dwwho]'); if (!b) return;
+  setDeviceWho(b.dataset.dwwho);
+  // re-render current game so indicators + lock state update
+  const pg = document.querySelector('.page.active');
+  if (pg) {
+    if (pg.id==='page-game-checkers') renderCheckers();
+    else if (pg.id==='page-game-war') initWar(true);
+    else if (pg.id==='page-game-memory') renderMemoryFromState();
+    else if (pg.id==='page-game-wyr') renderWYR();
+    else if (pg.id==='page-game-draw') renderDrawTurn();
+  }
+});
 
 /* ===================================================================
    GAME: CHECKERS  (8x8, simplified rules: diagonal moves, jumps, kinging)
@@ -1170,18 +1418,30 @@ function freshCheckers() {
   return b;
 }
 function loadCheckers() {
-  const saved = DB.get(K.games, {}).checkers;
-  if (saved && saved.board) { chBoard=saved.board; chTurn=saved.turn; }
-  else { chBoard=freshCheckers(); chTurn='l'; }
-  chSelected=null; chHistory=[];
+  const gs = loadGameState('checkers');
+  const valid = gs && gs.state && Array.isArray(gs.state.board)
+    && gs.state.board.length===8 && gs.state.board.every(row=>Array.isArray(row)&&row.length===8);
+  if (valid) {
+    chBoard = gs.state.board;
+    chTurn = gs.currentPlayer === 'luke' ? 'l' : 's';
+  } else {
+    chBoard = freshCheckers(); chTurn = 'l';
+    saveGameState('checkers', { board: chBoard }, 'luke', []);
+  }
+  chSelected = null; chHistory = [];
 }
 function saveCheckers() {
-  const g = DB.get(K.games, {}); g.checkers={board:chBoard, turn:chTurn}; DB.set(K.games, g);
+  const cp = chTurn === 'l' ? 'luke' : 'sophie';
+  const gs = loadGameState('checkers') || {};
+  saveGameState('checkers', { board: chBoard }, cp, gs.turnHistory || []);
 }
 function renderCheckers() {
-  if (!chBoard) loadCheckers();
+  const ok8 = Array.isArray(chBoard) && chBoard.length===8 && chBoard.every(r=>Array.isArray(r)&&r.length===8);
+  if (!ok8) loadCheckers();
   const s = getSettings();
-  $('#checkersTurn').textContent = chTurn==='l' ? `${HIS()}'s turn` : `${HER()}'s turn`;
+  // turn indicator + device-who chooser
+  let bar = $('#checkersTurnBar');
+  $('#checkersTurn').innerHTML = deviceWhoBar('checkers');
   const board = $('#checkersBoard');
   board.innerHTML='';
   for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
@@ -1197,6 +1457,8 @@ function renderCheckers() {
     if (chSelected && isValidMove(chSelected, {r,c})) sq.classList.add('target');
     board.appendChild(sq);
   }
+  // lock the board visually when it's not this device's turn
+  board.classList.toggle('locked', !checkTurn('checkers'));
 }
 function pieceMoves(from) {
   const cell=chBoard[from.r][from.c]; if(!cell) return [];
@@ -1216,6 +1478,8 @@ function inBounds(r,c){ return r>=0&&r<8&&c>=0&&c<8; }
 function isValidMove(from,to){ return pieceMoves(from).some(m=>m.r===to.r&&m.c===to.c); }
 $('#checkersBoard').addEventListener('click', e => {
   const sq=e.target.closest('.ch-sq'); if(!sq) return;
+  // turn lock: if this device has an identity and it isn't its turn, block.
+  if (!checkTurn('checkers')) { toast(`Not your turn — waiting for ${currentPlayer('checkers')==='luke'?HIS():HER()}`); return; }
   const r=+sq.dataset.r, c=+sq.dataset.c, cell=chBoard[r][c];
   if (chSelected) {
     const move = pieceMoves(chSelected).find(m=>m.r===r&&m.c===c);
@@ -1227,26 +1491,38 @@ $('#checkersBoard').addEventListener('click', e => {
       // kinging
       if (piece.p==='l' && r===0) piece.king=true;
       if (piece.p==='s' && r===7) piece.king=true;
+      // record move in turnHistory
+      const gs = loadGameState('checkers') || {};
+      const hist = gs.turnHistory || [];
+      hist.push({ player: chTurn==='l'?'luke':'sophie', from:{r:chSelected.r,c:chSelected.c}, to:{r,c}, jump:!!move.jump, timestamp: now() });
       // win check
       const sSide=chBoard.flat().filter(x=>x&&x.p==='s').length;
       const lSide=chBoard.flat().filter(x=>x&&x.p==='l').length;
       chSelected=null;
-      if (sSide===0){ saveCheckers(); renderCheckers(); $('#checkersTurn').textContent=`${HIS()} wins! 🎉`; confetti(); logActivity('🔴 Won a Checkers game'); return; }
-      if (lSide===0){ saveCheckers(); renderCheckers(); $('#checkersTurn').textContent=`${HER()} wins! 🎉`; confetti(); logActivity('🔴 Won a Checkers game'); return; }
+      if (sSide===0){ saveGameState('checkers',{board:chBoard}, 'luke', hist); renderCheckers(); $('#checkersTurn').textContent=`${HIS()} wins! 🎉`; confetti(); logActivity('🔴 Won a Checkers game'); return; }
+      if (lSide===0){ saveGameState('checkers',{board:chBoard}, 'sophie', hist); renderCheckers(); $('#checkersTurn').textContent=`${HER()} wins! 🎉`; confetti(); logActivity('🔴 Won a Checkers game'); return; }
       chTurn = chTurn==='l'?'s':'l';
-      saveCheckers(); renderCheckers(); return;
+      saveGameState('checkers', {board:chBoard}, chTurn==='l'?'luke':'sophie', hist);
+      renderCheckers(); return;
     }
     chSelected=null; renderCheckers(); return;
   }
   if (cell && cell.p===chTurn) { chSelected={r,c}; renderCheckers(); }
 });
 $('#checkersUndo').addEventListener('click', () => {
+  if (!checkTurn('checkers')) { toast('You can only undo on your turn'); return; }
   if (!chHistory.length) { toast('Nothing to undo'); return; }
   const prev = JSON.parse(chHistory.pop());
-  chBoard=prev.board; chTurn=prev.turn; chSelected=null; saveCheckers(); renderCheckers();
+  chBoard=prev.board; chTurn=prev.turn; chSelected=null;
+  const gs = loadGameState('checkers') || {};
+  const hist = (gs.turnHistory||[]).slice(0,-1);
+  saveGameState('checkers', {board:chBoard}, chTurn==='l'?'luke':'sophie', hist);
+  renderCheckers();
 });
 $('#checkersReset').addEventListener('click', () => {
-  chBoard=freshCheckers(); chTurn='l'; chSelected=null; chHistory=[]; saveCheckers(); renderCheckers();
+  chBoard=freshCheckers(); chTurn='l'; chSelected=null; chHistory=[];
+  saveGameState('checkers', {board:chBoard}, 'luke', []);
+  renderCheckers();
 });
 
 /* ===================================================================
@@ -1503,10 +1779,15 @@ $('#drawColor').addEventListener('input', e => { drawColor=e.target.value; });
 $('#drawClear').addEventListener('click', () => {
   drawCtx.fillStyle='#fff'; drawCtx.fillRect(0,0,$('#drawCanvas').width,$('#drawCanvas').height);
 });
+function renderDrawTurn() {
+  // Drawing syncs via the shared gallery (saved drawings appear for both on refresh).
+  // This refreshes the gallery; identity bar handled inline on the draw page if present.
+  if (typeof renderDrawGallery === 'function') renderDrawGallery();
+}
 function saveDrawing(forWho) {
   const url=$('#drawCanvas').toDataURL('image/png');
   const arr=DB.get(K.drawings, []);
-  arr.unshift({ id:now(), img:url, for:forWho, t:now() });
+  arr.unshift({ id:now(), img:url, for:forWho, from: deviceWho()||null, t:now() });
   DB.set(K.drawings, arr.slice(0,40));
   bumpStreak('draw'); renderDrawGallery();
   logActivity(`🎨 Drew something for ${forWho}`);
