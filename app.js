@@ -510,6 +510,7 @@ function potdTimeStr(ts) {
   catch { return ''; }
 }
 function renderPOTD() {
+  expirePOTD();                                 // retire photos older than 24h first
   const data = DB.get(K.potd, null);
   const img = $('#potdImg'), empty = $('#potdEmpty'), cap = $('#potdCaption');
   const edit = $('#potdEdit'), meta = $('#potdMeta');
@@ -530,6 +531,17 @@ function renderPOTD() {
     if (edit) edit.hidden = true;
     if (meta) meta.hidden = true;
   }
+}
+
+/* If the current photo-of-the-day is older than 24h, archive it to the gallery
+   and clear the slot so a fresh photo can be posted. */
+function expirePOTD() {
+  const cur = DB.get(K.potd, null);
+  if (!cur || !cur.img) return;
+  const stamp = cur.uploadedAt || 0;
+  if (!stamp || (now() - stamp) <= DAY_MS) return;
+  archiveCurrentPOTD();
+  DB.set(K.potd, null);
 }
 
 /* Move the CURRENT photo-of-the-day into the gallery so it's never lost. */
@@ -723,23 +735,53 @@ const STREAK_DEFS = [
   ['bible','📖 Bible Reading'], ['pray','🙏 Praying Together'],
   ['photo','📸 New Photo'], ['questions','💬 Daily Questions'], ['draw','🎨 Drew for Each Other']
 ];
+const DAY_MS = 86400000;
+const STREAK_WINDOW_MS = 2 * DAY_MS;   // grace: a streak survives up to 48h since last log
+const STREAK_MIN_GAP_MS = 20 * 60 * 60 * 1000; // ~20h: prevents double-counting within one day
+
 function getStreaks() {
-  return DB.get(K.streaks, { bible:{count:0,last:''}, pray:{count:0,last:''},
-    photo:{count:0,last:''}, questions:{count:0,last:''}, draw:{count:0,last:''} });
+  return DB.get(K.streaks, { bible:{count:0,lastTs:0}, pray:{count:0,lastTs:0},
+    photo:{count:0,lastTs:0}, questions:{count:0,lastTs:0}, draw:{count:0,lastTs:0} });
 }
+
+/* Reset any streak whose last log is older than the window. Each streak decays
+   on its own clock — missing one (e.g. bible) never touches the others (e.g. pray).
+   Returns true if anything changed so callers can persist. */
+function decayStreaks(s) {
+  let changed = false;
+  const t = now();
+  for (const k in s) {
+    if (!s[k]) continue;
+    if (s[k].count > 0 && s[k].lastTs && (t - s[k].lastTs) > STREAK_WINDOW_MS) {
+      s[k] = { count:0, lastTs:0 };
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function bumpStreak(key) {
   const s = getStreaks();
-  if (!s[key]) s[key] = {count:0,last:''};
-  const today = todayStr();
-  if (s[key].last === today) return;          // already counted today
-  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  s[key].count = (s[key].last === yesterday) ? s[key].count+1 : 1;
-  s[key].last = today;
+  if (!s[key]) s[key] = {count:0,lastTs:0};
+  decayStreaks(s);                              // expire stale streaks first
+  const t = now();
+  const last = s[key].lastTs || 0;
+  const gap = t - last;
+  if (last && gap < STREAK_MIN_GAP_MS) {        // already counted within this 24h window
+    s[key].lastTs = t;                          // keep window fresh, don't increment
+    DB.set(K.streaks, s);
+    renderStreaks();
+    return;
+  }
+  // within the grace window -> continue; otherwise (or first ever) -> start at 1
+  s[key].count = (last && gap <= STREAK_WINDOW_MS) ? s[key].count + 1 : 1;
+  s[key].lastTs = t;
   DB.set(K.streaks, s);
   renderStreaks();
 }
 function renderStreaks() {
   const s = getStreaks();
+  if (decayStreaks(s)) DB.set(K.streaks, s);    // reset expired streaks on view
   $('#streakList').innerHTML = STREAK_DEFS.map(([k,label]) => {
     const c = s[k]?.count || 0;
     const pct = Math.min(100, c*10);
@@ -751,9 +793,10 @@ function renderStreaks() {
 $('#streakList').addEventListener('click', e => {
   const item = e.target.closest('.streak-item'); if (!item) return;
   const s = getStreaks(); const d = s[item.dataset.streak];
+  const lastStr = d && d.lastTs ? new Date(d.lastTs).toLocaleString() : 'never';
   openModal(`<h3>Streak history</h3>
     <p style="font-size:14px;line-height:1.6">Current streak: <b>${d.count} days</b> 🔥<br>
-    Last logged: ${d.last||'never'}<br><br>
+    Last logged: ${lastStr}<br><br>
     ${d.count>0 ? '✅ '.repeat(Math.min(d.count,14)) : 'Start today! 💕'}</p>
     <div class="modal-actions"><button class="pill-btn" data-close>Close</button></div>`);
 });
@@ -2181,8 +2224,9 @@ function renderPrayer() {
   const day=Math.floor(Date.now()/86400000)%SCRIPTURES.length;
   $('#scripture').textContent = SCRIPTURES[day];
   const s=getStreaks();
+  decayStreaks(s);
   $('#prayerStreak').textContent = s.pray?.count || 0;
-  $('#prayedToday').checked = s.pray?.last === todayStr();
+  $('#prayedToday').checked = !!(s.pray?.lastTs && (now() - s.pray.lastTs) < DAY_MS);
   const prayers=getPrayers();
   $('#prayerList').innerHTML = prayers.length
     ? prayers.map(p=>`<div class="prayer-item ${p.answered?'answered':''}">
