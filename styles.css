@@ -550,3 +550,51 @@ body.night .couple-login { background:linear-gradient(160deg,#241b2e,#1c1726); }
 .poth-info { display:flex; flex-direction:column; padding:4px 6px; }
 .poth-date { font-size:10px; font-weight:700; color:var(--char); }
 .poth-by { font-size:9px; color:var(--muted); }
+/* ===== Story Writing ===== */
+.story-modes { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.story-mode-btn { display:flex; flex-direction:column; gap:2px; align-items:flex-start;
+  background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:14px 16px; cursor:pointer; text-align:left; }
+.story-mode-btn b { font-family:'Nunito'; font-size:16px; color:var(--char); }
+.story-mode-btn span { font-size:12px; color:var(--muted); }
+.story-mode-btn:active { transform:scale(.98); }
+.story-meta { font-size:12px; margin-bottom:8px; }
+.story-mode-tag { font-weight:800; color:var(--rose); }
+.story-prompt { background:var(--cream); border-radius:12px; padding:12px; font-style:italic;
+  font-size:14px; margin-bottom:12px; border-left:3px solid var(--lav); }
+.story-text { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:14px;
+  font-size:15px; line-height:1.6; white-space:pre-wrap; margin-bottom:12px; min-height:60px; }
+#storyInput { width:100%; border:1.5px solid var(--line); border-radius:12px; padding:10px 12px;
+  background:var(--card); margin-bottom:10px; font-family:inherit; resize:vertical; }
+
+/* ===== Gratitude & Future ===== */
+.grat-asyou { text-align:center; font-size:13px; color:var(--muted); margin-bottom:12px; }
+.grat-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:16px; }
+.grat-q { display:block; font-family:'Nunito'; font-weight:700; font-size:13px; margin:10px 0 6px; }
+.grat-card textarea { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px;
+  background:var(--cream); font-family:inherit; resize:vertical; margin-bottom:4px; }
+.grat-history { }
+.grat-hist-title { font-family:'Nunito'; font-size:15px; margin:6px 0 10px; }
+.grat-hist-day { background:var(--card); border-radius:12px; box-shadow:var(--shadow); padding:12px; margin-bottom:10px; }
+.grat-hist-date { font-size:11px; font-weight:800; color:var(--sage); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+.grat-hist-person { border-left:3px solid var(--line); padding-left:10px; margin-bottom:8px; }
+.grat-hist-person.luke { border-left-color:var(--rose); }
+.grat-hist-person.sophie { border-left-color:var(--lav); }
+.grat-hist-who { font-family:'Nunito'; font-weight:800; font-size:12px; margin-bottom:3px; }
+.grat-hist-line { font-size:13px; color:var(--char); margin:2px 0; }
+
+/* ===== Photo Calendar ===== */
+.cal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.cal-month { font-family:'Nunito'; font-weight:800; font-size:17px; }
+.cal-nav { width:36px; height:36px; border:none; border-radius:50%; background:var(--card);
+  box-shadow:var(--shadow); font-size:18px; cursor:pointer; color:var(--char); }
+.cal-dow { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px; }
+.cal-dow span { text-align:center; font-size:11px; font-weight:700; color:var(--muted); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-cell { aspect-ratio:1; border-radius:8px; background:var(--cream); position:relative; overflow:hidden;
+  display:flex; align-items:flex-end; justify-content:flex-end; }
+.cal-cell.empty { background:transparent; }
+.cal-cell.has-photo { cursor:pointer; }
+.cal-cell img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.cal-day { position:relative; z-index:1; font-size:10px; font-weight:700; padding:2px 4px;
+  color:var(--char); }
+.cal-cell.has-photo .cal-day { color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.7); }

@@ -153,6 +153,7 @@
         <button class="quick-btn" data-go="games">🎮<span>Games</span></button>
         <button class="quick-btn" data-go="pet">🐕<span>Our Pet</span></button>
         <button class="quick-btn" data-go="dates">💡<span>Date Ideas</span></button>
+        <button class="quick-btn" data-go="gratitude">💛<span>Gratitude</span></button>
       </div>
 
       <!-- Recent Activity -->
@@ -165,6 +166,7 @@
       <div class="quick-grid secondary">
         <button class="quick-btn small" data-go="draw">🎨<span>Draw</span></button>
         <button class="quick-btn small" data-go="gallery">🖼️<span>Gallery</span></button>
+        <button class="quick-btn small" data-go="calendar">🗓️<span>Photo Calendar</span></button>
         <button class="quick-btn small" data-go="stats">📊<span>Stats</span></button>
         <button class="quick-btn small" data-go="prayer">🙏<span>Prayer</span></button>
         <button class="quick-btn small" data-go="map">🗺️<span>Love Map</span></button>
@@ -232,6 +234,7 @@
         <button class="quick-btn" data-go="game-memory">🃏<span>Memory Match</span></button>
         <button class="quick-btn" data-go="game-war">⚔️<span>War</span></button>
         <button class="quick-btn" data-go="game-checkers">🔴<span>Checkers</span></button>
+        <button class="quick-btn" data-go="game-story">📖<span>Story Writing</span></button>
       </div>
     </section>
 
@@ -266,6 +269,27 @@
         <button class="pill-btn" id="checkersUndo">↩️ Undo</button>
         <button class="pill-btn ghost" id="checkersReset">🔄 New Game</button>
       </div>
+    </section>
+
+    <!-- ===== STORY WRITING ===== -->
+    <section class="page" id="page-game-story" data-page="game-story">
+      <div class="page-top"><button class="back" data-go="games">‹</button><h2>📖 Story Writing</h2></div>
+      <div id="storyStage"></div>
+    </section>
+
+    <!-- ===== DAILY GRATITUDE & EXCITEMENT ===== -->
+    <section class="page" id="page-gratitude" data-page="gratitude">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>💛 Gratitude & Future</h2></div>
+      <div id="gratWhoBar"></div>
+      <div id="gratToday"></div>
+      <div id="gratHistory" class="grat-history"></div>
+    </section>
+
+    <!-- ===== PHOTO CALENDAR ===== -->
+    <section class="page" id="page-calendar" data-page="calendar">
+      <div class="page-top"><button class="back" data-go="home">‹</button><h2>🗓️ Photo Calendar</h2></div>
+      <p class="center-note">Tap any day with a photo to view it full-screen.</p>
+      <div id="calGrid"></div>
     </section>
 
     <!-- ===== PET ===== -->

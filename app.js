@@ -397,6 +397,8 @@ const K = {
   pet:'ourCorner_pet', drawings:'ourCorner_drawings', photos:'ourCorner_photos',
   games:'ourCorner_games', prayers:'ourCorner_prayers', settings:'ourCorner_settings',
   questions:'ourCorner_questions', activity:'ourCorner_activity', dates:'ourCorner_dates',
+  customQuestions:'ourCorner_customQuestions',
+  story:'ourCorner_story', gratitude:'ourCorner_gratitude',
   start:'ourCorner_startDate'
 };
 
@@ -462,6 +464,9 @@ function go(page) {
   if (page === 'game-memory') startMemoryOrResume();
   if (page === 'game-war') initWar(true);
   if (page === 'game-checkers') renderCheckers();
+  if (page === 'game-story') renderStoryWriting();
+  if (page === 'gratitude') renderGratitude();
+  if (page === 'calendar') renderPhotoCalendar();
   if (page === 'pet') renderPet();
   if (page === 'dates') renderDates();
   if (page === 'draw') initDrawCanvas();
@@ -957,129 +962,399 @@ $('#exportDiary').addEventListener('click', () => {
 /* ===================================================================
    DAILY QUESTIONS
    =================================================================== */
-const QUESTIONS = [
-  "What's one thing Luke did today that made you smile?",
-  "Sophie, what's a dream you have for your future with Luke?",
-  "If we could teleport anywhere right now, where would we go?",
-  "What's your favorite memory of us so far?",
-  "Luke, what's something you admire about Sophie?",
-  "Sophie, what made you laugh hardest this week?",
-  "What song reminds you of us?",
-  "What's a small thing that means a lot to you?",
-  "Where do you see us in five years?",
-  "What's your favorite thing about long-distance (if anything)?",
-  "What food do you wish we could share right now?",
-  "What's a goal you want us to achieve together?",
-  "Luke, what's your favorite photo of Sophie and why?",
-  "Sophie, when do you feel most loved?",
-  "What's something new you want to try together?",
-  "What's a quality you hope our future home will have?",
-  "What movie should be our next watch-party pick?",
-  "What's the first thing you want to do when we're together again?",
-  "What made you fall for me?",
-  "What's a tradition you'd like us to start?",
-  "Luke, describe Sophie in three words.",
-  "Sophie, describe Luke in three words.",
-  "What are you most grateful for today?",
-  "What's a fear you'd like to share?",
-  "What's the best advice you've ever gotten about love?",
-  "If we wrote a book together, what would it be about?",
-  "What's your love language and how can I speak it better?",
-  "What's a tiny habit of mine you secretly love?",
-  "Where should we travel first together?",
-  "What's a moment you wish you could relive?",
-  "What does 'home' mean to you?",
-  "What's something you're proud of this week?",
-  "How can I support you better right now?",
-  "What's a silly inside joke we have?",
-  "What's your favorite way to spend a lazy Sunday together?",
-  "What's a skill you'd like to learn together?",
-  "What's the nicest thing someone said about us?",
-  "What do you daydream about when you miss me?",
-  "What's one promise you want to make to us?",
-  "What color describes our relationship?",
-  "What's the bravest thing you've done for love?",
-  "What would our perfect date look like?",
-  "What's a question you've always wanted to ask me?",
-  "What's your favorite thing we've built together?",
-  "What makes you feel closest to me across the distance?",
-  "What's a memory that always makes you laugh?",
-  "What do you want our anniversary to look like?",
-  "What's something you appreciate that I don't hear enough?",
-  "If we adopted a real pet, what would we name it?",
-  "What's your hope for us this month?"
+const QUESTION_BANK = [
+  { c:'daily',     t:"What's one thing {them} did today that made you smile?" },
+  { c:'daily',     t:"What was the best part of your day?" },
+  { c:'daily',     t:"What's something you're grateful for today?" },
+  { c:'daily',     t:"What made you laugh hardest this week?" },
+  { c:'daily',     t:"What's a small thing that means a lot to you?" },
+  { c:'daily',     t:"What song reminds you of {them}?" },
+  { c:'romance',   t:"What's a dream you have for your future with {them}?" },
+  { c:'romance',   t:"What's your favorite memory of us so far?" },
+  { c:'romance',   t:"What's something you admire about {them}?" },
+  { c:'romance',   t:"When do you feel most loved?" },
+  { c:'romance',   t:"What made you fall for {them}?" },
+  { c:'romance',   t:"Describe {them} in three words." },
+  { c:'romance',   t:"What's a tiny habit of {them}'s you secretly love?" },
+  { c:'romance',   t:"What's your favorite photo of {them} and why?" },
+  { c:'romance',   t:"What's your love language and how can {them} speak it better?" },
+  { c:'romance',   t:"What do you daydream about when you miss {them}?" },
+  { c:'romance',   t:"What makes you feel closest to {them} across the distance?" },
+  { c:'deep',      t:"Where do you see us in five years?" },
+  { c:'deep',      t:"What does 'home' mean to you?" },
+  { c:'deep',      t:"What's a fear you'd like to share?" },
+  { c:'deep',      t:"How can {them} support you better right now?" },
+  { c:'deep',      t:"What's one promise you want to make to us?" },
+  { c:'deep',      t:"What's a question you've always wanted to ask {them}?" },
+  { c:'adventure', t:"If we could teleport anywhere right now, where would we go?" },
+  { c:'adventure', t:"Where should we travel first together?" },
+  { c:'adventure', t:"What's something new you want to try together?" },
+  { c:'adventure', t:"What would our perfect date look like?" },
+  { c:'adventure', t:"What's the first thing you want to do when you're together again?" },
+  { c:'funny',     t:"What's a silly inside joke we have?" },
+  { c:'funny',     t:"If we adopted a real pet, what would we name it?" },
+  { c:'funny',     t:"If we wrote a book together, what would it be about?" },
+  { c:'funny',     t:"What movie should be our next watch-party pick?" },
+  { c:'daily',     t:"What food do you wish you could share with {them} right now?" },
+  { c:'romance',   t:"What's a tradition you'd like us to start?" },
+  { c:'deep',      t:"What's a goal you want us to achieve together?" },
+  { c:'romance',   t:"What's a moment you wish you could relive?" },
+  { c:'romance',   t:"What do you want our anniversary to look like?" },
+  { c:'daily',     t:"What's your hope for us this month?" },
+  { c:'deep',      t:"What's a quality you hope our future home will have?" }
 ];
 const QOTW = [
-  "Looking back at the past year, what moment changed our relationship the most, and where do you hope we'll be a year from now?",
+  "Looking back at the past year, what moment changed our relationship the most, and where do you hope you'll be a year from now?",
   "If you wrote a letter to us five years from now, what would you want that future couple to remember about right now?",
   "What does building a life together mean to you, and what's one foundation you want us to lay this season?"
 ];
-function questionState() {
-  return DB.get(K.questions, { index:0, answers:{}, answeredDates:{} });
+function personalizeQ(text, who){
+  const you = who==='luke'?HIS():HER(); const them = who==='luke'?HER():HIS();
+  return text.replace(/\{you\}/g,you).replace(/\{them\}/g,them);
 }
+function customQuestions(){ return DB.get(K.customQuestions, []); }
+function allQuestions(){
+  const builtin = QUESTION_BANK.map((q,i)=>({ questionId:'b'+i, category:q.c, text:q.t, isCustom:false }));
+  return builtin.concat(customQuestions());
+}
+function questionState(){ return DB.get(K.questions, { index:0, answers:{}, answeredDates:{} }); }
 let qWho = 'luke';
-function renderQuestion() {
-  const st = questionState();
-  const idx = st.index % QUESTIONS.length;
-  $('#qDay').textContent = `Question ${idx+1} of ${QUESTIONS.length}`;
-  $('#qText').textContent = QUESTIONS[idx];
-  // Question of the week (rotates weekly)
+function renderQuestion(){
+  const st = questionState(); const list = allQuestions();
+  const tBtns = $$('#qWhoToggle button');
+  if (tBtns[0]) tBtns[0].textContent = '🦂 '+HIS();
+  if (tBtns[1]) tBtns[1].textContent = '🌸 '+HER();
+  const idx = st.index % list.length; const q = list[idx];
+  $('#qDay').textContent = `Question ${idx+1} of ${list.length}`;
+  $('#qText').innerHTML = escapeHtml(personalizeQ(q.text,qWho)) + (q.isCustom?' <span class="q-custom-badge">✏️ Your Question</span>':'');
   const week = Math.floor(Date.now()/604800000) % QOTW.length;
-  $('#qotwText').textContent = QOTW[week];
-  const a = st.answers[idx] || {};
+  $('#qotwText').textContent = personalizeQ(QOTW[week], qWho);
+  const a = st.answers[q.questionId] || {};
   const reveal = $('#qReveal'), next = $('#qNext');
-  if (a.luke && a.sophie) {
-    showReveal(a);
-    $('#qAnswer').value=''; reveal.hidden=false; next.hidden=false;
-  } else {
-    reveal.hidden=true; next.hidden=true;
-    $('#qAnswer').value = a[qWho] || '';
-  }
+  if (a.luke && a.sophie){ showReveal(a,q); $('#qAnswer').value=''; reveal.hidden=false; next.hidden=false; }
+  else { reveal.hidden=true; next.hidden=true; $('#qAnswer').value = a[qWho] || ''; }
 }
-function showReveal(a) {
-  const match = a.luke.trim().toLowerCase() === a.sophie.trim().toLowerCase();
+function showReveal(a,q){
+  const match = a.luke.trim().toLowerCase()===a.sophie.trim().toLowerCase();
   $('#qReveal').innerHTML = `
-    <div class="q-answer-box luke"><div class="qa-who">${HIS()}</div>${escapeHtml(a.luke)}</div>
-    <div class="q-answer-box sophie"><div class="qa-who">${HER()}</div>${escapeHtml(a.sophie)}</div>
+    <div class="q-answer-box luke"><div class="qa-who">${HIS()}</div><div class="qa-q">${escapeHtml(personalizeQ(q.text,'luke'))}</div>${escapeHtml(a.luke)}</div>
+    <div class="q-answer-box sophie"><div class="qa-who">${HER()}</div><div class="qa-q">${escapeHtml(personalizeQ(q.text,'sophie'))}</div>${escapeHtml(a.sophie)}</div>
     ${match?'<div class="q-match">❤️ Match!</div>':''}`;
 }
 $('#qWhoToggle').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
+  const b = e.target.closest('button'); if(!b) return;
   qWho = b.dataset.who;
-  $$('#qWhoToggle button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  const st = questionState(); const a = st.answers[st.index % QUESTIONS.length] || {};
-  if (!(a.luke && a.sophie)) $('#qAnswer').value = a[qWho] || '';
+  $$('#qWhoToggle button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  renderQuestion();
 });
 $('#qSubmit').addEventListener('click', () => {
-  const val = $('#qAnswer').value.trim();
-  if (!val) { toast('Write an answer first 💕'); return; }
-  const st = questionState();
-  const idx = st.index % QUESTIONS.length;
-  st.answers[idx] = st.answers[idx] || {};
-  st.answers[idx][qWho] = val;
+  const val = $('#qAnswer').value.trim(); if(!val){ toast('Write an answer first 💕'); return; }
+  const st = questionState(); const list = allQuestions(); const idx = st.index % list.length; const q = list[idx];
+  st.answers[q.questionId] = st.answers[q.questionId] || {};
+  const respondent = qWho;
+  st.answers[q.questionId][respondent] = val;
+  st.answers[q.questionId]._records = st.answers[q.questionId]._records || {};
+  st.answers[q.questionId]._records[respondent] = { answerId:'ans_'+respondent+'_'+q.questionId, questionId:q.questionId, respondent, answer:val, timestamp:now() };
   DB.set(K.questions, st);
-  if ($('#qSaveDiary').checked) {
+  if ($('#qSaveDiary').checked){
     const entries = DB.get(K.diary, []);
-    entries.push({ id:now(), t:now(), title:`Q: ${QUESTIONS[idx]}`, body:`${NAME(qWho)}: ${val}`, tags:['dailyquestion'], photos:[] });
+    entries.push({ id:now(), t:now(), title:`Q: ${personalizeQ(q.text,respondent)}`, body:`${NAME(respondent)}: ${val}`, tags:['dailyquestion'], photos:[] });
     DB.set(K.diary, entries);
   }
-  const a = st.answers[idx];
-  if (a.luke && a.sophie) {
-    bumpStreak('questions');
-    showReveal(a); $('#qReveal').hidden=false; $('#qNext').hidden=false;
+  const a = st.answers[q.questionId];
+  if (a.luke && a.sophie){
+    bumpStreak('questions'); showReveal(a,q); $('#qReveal').hidden=false; $('#qNext').hidden=false;
     logActivity('💬 Both answered the daily question');
     if (a.luke.trim().toLowerCase()===a.sophie.trim().toLowerCase()) confetti();
-  } else {
-    toast(`Saved! Waiting for ${qWho==='luke'?HER():HIS()} 💞`);
-    $('#qAnswer').value='';
-  }
+  } else { toast(`Saved! Waiting for ${respondent==='luke'?HER():HIS()} 💞`); $('#qAnswer').value=''; }
 });
 $('#qNext').addEventListener('click', () => {
-  const st = questionState(); st.index = (st.index+1) % QUESTIONS.length;
-  DB.set(K.questions, st);
-  $('#qSaveDiary').checked=false;
-  renderQuestion();
+  const st = questionState(); st.index = (st.index+1) % allQuestions().length;
+  DB.set(K.questions, st); $('#qSaveDiary').checked=false; renderQuestion();
+});
+const QCATS = ['daily','romance','sexual','deep','funny','faith','adventure'];
+const QCAT_LABEL = { daily:'Daily', romance:'Romance', sexual:'Sexual', deep:'Deep', funny:'Funny', faith:'Faith', adventure:'Adventure' };
+function qAddModal(editId){
+  const editing = editId ? customQuestions().find(q=>q.questionId===editId) : null;
+  openModal(`
+    <h3>${editing?'Edit':'Add'} Custom Question</h3>
+    <label>Question<textarea id="qcText" rows="3" placeholder="Tip: use {them} for your partner, e.g. What did {them} do today?">${editing?escapeHtml(editing.text):''}</textarea></label>
+    <label>Category<select id="qcCat">${QCATS.map(c=>`<option value="${c}" ${editing&&editing.category===c?'selected':''}>${QCAT_LABEL[c]}</option>`).join('')}</select></label>
+    <div class="modal-actions">
+      <button class="pill-btn ghost" data-close>Cancel</button>
+      ${editing?`<button class="pill-btn danger" id="qcDelete">Delete</button>`:''}
+      <button class="pill-btn" id="qcSave">${editing?'Save':'Add'}</button>
+    </div>`);
+  $('#qcSave').addEventListener('click', () => {
+    const text = $('#qcText').value.trim(); if(!text){ toast('Write the question first'); return; }
+    const cat = $('#qcCat').value; const lst = customQuestions();
+    if (editing){ editing.text=text; editing.category=cat; const i=lst.findIndex(q=>q.questionId===editId); lst[i]=editing; }
+    else lst.push({ questionId:'c_'+now()+'_'+Math.random().toString(36).slice(2,6), category:cat, text, isCustom:true });
+    DB.set(K.customQuestions, lst); closeModal(); toast(editing?'Question updated':'Question added ✏️'); renderQuestion();
+  });
+  const del = $('#qcDelete');
+  if (del) del.addEventListener('click', () => {
+    DB.set(K.customQuestions, customQuestions().filter(q=>q.questionId!==editId));
+    const st = questionState(); delete st.answers[editId]; st.index=0; DB.set(K.questions, st);
+    closeModal(); toast('Question deleted'); renderQuestion();
+  });
+}
+function qManageModal(){
+  const lst = customQuestions();
+  openModal(`
+    <h3>Your Custom Questions</h3>
+    ${lst.length?`<div class="q-manage-list">${lst.map(q=>`<div class="q-manage-row"><span><em class="q-cat-tag">${QCAT_LABEL[q.category]||q.category}</em> ${escapeHtml(q.text)}</span><button class="q-edit-btn" data-qedit="${q.questionId}">✏️</button></div>`).join('')}</div>`:'<p class="muted">No custom questions yet. Add one to mix it into your rotation!</p>'}
+    <div class="modal-actions"><button class="pill-btn ghost" data-close>Close</button><button class="pill-btn" id="qManageAdd">+ Add New</button></div>`);
+  $('#qManageAdd').addEventListener('click', ()=>qAddModal());
+  $$('#modal [data-qedit]').forEach(b=>b.addEventListener('click', ()=>qAddModal(b.dataset.qedit)));
+}
+const _qAddBtn = $('#qAddCustom'); if (_qAddBtn) _qAddBtn.addEventListener('click', ()=>qAddModal());
+const _qManageBtn = $('#qManage'); if (_qManageBtn) _qManageBtn.addEventListener('click', ()=>qManageModal());
+
+/* ===================================================================
+   GAME: STORY WRITING  (collaborative, alternating turns)
+   Modes: word | sentence | paragraph. Each turn you add your part,
+   then it's your partner's turn. Uses the gameStates turn layer.
+   =================================================================== */
+const STORY_PROMPTS = [
+  "Our first date, except one of us is secretly a vampire.",
+  "The day our pet learned to talk and immediately started giving relationship advice.",
+  "We accidentally got elected co-mayors of a small, very weird town.",
+  "A romantic dinner that's interrupted by a raccoon heist.",
+  "We woke up and swapped bodies, and today is the worst possible day for that.",
+  "Our love story, but narrated by an overly dramatic nature documentary host.",
+  "We open a restaurant that only serves food at 3am to confused customers.",
+  "The time we got trapped in an IKEA overnight and built a civilization.",
+  "We're spies on opposite teams who keep accidentally going on dates.",
+  "Our wedding, but everything that can go hilariously wrong does.",
+  "We adopt a goose. The goose has opinions about our relationship.",
+  "The day gravity stopped working but only in our apartment.",
+  "We start a band with zero musical talent and somehow become famous.",
+  "A road trip where the GPS is clearly trying to break us up.",
+  "We find a genie, but it only grants extremely petty wishes.",
+  "Our future kids interview us about how we 'really' met (we lie).",
+  "We accidentally join a cult that's just really into competitive gardening.",
+  "The grocery store run that turned into an international incident.",
+  "We're the last two people on Earth and we cannot agree on what to watch.",
+  "Our love letters, except autocorrect changed every important word.",
+  "We get stuck in a time loop reliving our most embarrassing date.",
+  "The day we became reluctant superheroes whose only power is finding parking.",
+  "We host a dinner party for our exes. It goes about as well as expected.",
+  "A camping trip where the squirrels have formed a tiny, hostile government.",
+  "We switch lives with a royal couple and immediately cause a scandal.",
+  "Our houseplants stage an intervention about how we treat them.",
+  "We accidentally enter a ballroom dancing competition with no training.",
+  "The morning we woke up 50 years in the future as a very famous old couple.",
+  "We try to assemble furniture and accidentally summon something.",
+  "Our beach vacation, narrated entirely by a judgmental seagull.",
+  "We become contestants on a game show designed to test our relationship.",
+  "The day our smart home gained sentience and got way too involved.",
+  "We open a detective agency that only solves extremely low-stakes mysteries.",
+  "A snowstorm traps us in a cabin with a very chatty ghost.",
+  "We accidentally adopt 14 cats in a single afternoon and must explain ourselves.",
+  "Our origin story if we were a crime-fighting duo with terrible costumes."
+];
+const STORY_MODES = {
+  word:      { label:'One Word',     hint:'Add ONE word, then pass.' },
+  sentence:  { label:'One Sentence', hint:'Add ONE sentence, then pass.' },
+  paragraph: { label:'Paragraph',    hint:'Add a paragraph, then pass.' }
+};
+function storyState(){ return loadGameState('story'); }
+function renderStoryWriting(){
+  const gs = storyState();
+  if (!gs || !gs.state || !gs.state.mode){
+    // mode + prompt picker
+    $('#storyStage').innerHTML = `
+      ${deviceWhoBar('story')}
+      <p class="center-note">Pick a mode and a prompt to start a story together!</p>
+      <div class="story-modes">
+        ${Object.entries(STORY_MODES).map(([k,m])=>`<button class="story-mode-btn" data-storymode="${k}"><b>${m.label}</b><span>${m.hint}</span></button>`).join('')}
+      </div>`;
+    return;
+  }
+  const st = gs.state;
+  const cp = gs.currentPlayer;
+  const mode = STORY_MODES[st.mode];
+  const text = st.parts.map(p=>p.text).join(st.mode==='word'?' ':st.mode==='paragraph'?'\n\n':' ');
+  $('#storyStage').innerHTML = `
+    ${deviceWhoBar('story')}
+    <div class="story-meta"><span class="story-mode-tag">${mode.label} Mode</span> · <span class="muted">${st.parts.length} contribution${st.parts.length!==1?'s':''}</span></div>
+    <div class="story-prompt">📝 ${escapeHtml(st.prompt)}</div>
+    <div class="story-text" id="storyText">${st.parts.length?escapeHtml(text):'<span class="muted">Empty — start the story!</span>'}</div>
+    <textarea id="storyInput" rows="${st.mode==='paragraph'?4:2}" placeholder="${escapeHtml(mode.hint)}" ${!checkTurn('story')?'disabled':''}></textarea>
+    <button class="pill-btn full" id="storyAdd" ${!checkTurn('story')?'disabled':''}>${checkTurn('story')?'Add & Pass Turn':'Waiting for '+(cp==='luke'?HIS():HER())+'…'}</button>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <button class="pill-btn ghost sm" id="storySave">💾 Save to Diary</button>
+      <button class="pill-btn ghost sm" id="storyNew">🔄 New Story</button>
+    </div>`;
+}
+function storyValidate(text, mode){
+  const t = text.trim();
+  if (!t) return 'Write something first ✍️';
+  if (mode==='word' && /\s/.test(t)) return 'One word only for this mode!';
+  if (mode==='sentence'){
+    const sentences = t.split(/[.!?]+/).filter(s=>s.trim().length);
+    if (sentences.length>1) return 'Just one sentence for this mode!';
+  }
+  return null;
+}
+document.addEventListener('click', e => {
+  // mode picker
+  const mb = e.target.closest('[data-storymode]');
+  if (mb && $('#page-game-story')?.classList.contains('active')){
+    const mode = mb.dataset.storymode;
+    const prompt = STORY_PROMPTS[Math.floor(Math.random()*STORY_PROMPTS.length)];
+    saveGameState('story', { mode, prompt, parts:[] }, 'luke', []);
+    renderStoryWriting(); return;
+  }
+  // add a contribution
+  if (e.target.id==='storyAdd'){
+    if (!checkTurn('story')){ toast(`Waiting for ${currentPlayer('story')==='luke'?HIS():HER()}`); return; }
+    const gs = storyState(); if (!gs||!gs.state) return;
+    const st = gs.state; const val = $('#storyInput').value;
+    const err = storyValidate(val, st.mode); if (err){ toast(err); return; }
+    st.parts.push({ who: gs.currentPlayer, text: val.trim(), t: now() });
+    const next = gs.currentPlayer==='luke'?'sophie':'luke';
+    const hist = (gs.turnHistory||[]).concat([{ who:gs.currentPlayer, text:val.trim(), t:now() }]);
+    saveGameState('story', st, next, hist);
+    renderStoryWriting();
+    logActivity('📖 Added to your shared story');
+    return;
+  }
+  // save to diary
+  if (e.target.id==='storySave'){
+    const gs = storyState(); if (!gs||!gs.state||!gs.state.parts.length){ toast('Nothing to save yet'); return; }
+    const st = gs.state;
+    const text = st.parts.map(p=>p.text).join(st.mode==='word'?' ':st.mode==='paragraph'?'\n\n':' ');
+    const entries = DB.get(K.diary, []);
+    entries.push({ id:now(), t:now(), title:`📖 Our Story: ${st.prompt}`, body:text, tags:['story'], photos:[] });
+    DB.set(K.diary, entries);
+    toast('Saved to diary 📖');
+    return;
+  }
+  // new story
+  if (e.target.id==='storyNew'){
+    saveGameState('story', { mode:null }, 'luke', []);
+    renderStoryWriting();
+    return;
+  }
+});
+
+
+/* ===================================================================
+   DAILY GRATITUDE & EXCITEMENT  (per-partner, with scrollable history)
+   =================================================================== */
+let gratWho = 'luke';
+function gratitudeAll(){ return DB.get(K.gratitude, {}); }
+function renderGratitude(){
+  const who = (typeof deviceWho==='function' && deviceWho()) ? deviceWho() : gratWho;
+  gratWho = who;
+  const all = gratitudeAll();
+  const today = todayStr();
+  const todayRec = all[today] || {};
+  const mine = todayRec[who] || {};
+  const dev = (typeof deviceWho==='function') ? deviceWho() : null;
+  $('#gratWhoBar').innerHTML = dev
+    ? `<div class="grat-asyou">Answering as <b>${who==='luke'?HIS():HER()}</b></div>`
+    : `<div class="who-toggle" id="gratWhoToggle">
+         <button data-gw="luke" class="${who==='luke'?'active':''}">🦂 ${HIS()}</button>
+         <button data-gw="sophie" class="${who==='sophie'?'active':''}">🌸 ${HER()}</button>
+       </div>`;
+  $('#gratToday').innerHTML = `
+    <div class="grat-card">
+      <label class="grat-q">🙏 One thing you're grateful for about ${who==='luke'?HER():HIS()} today</label>
+      <textarea id="gratGrateful" rows="2" placeholder="Today I'm grateful that…">${escapeHtml(mine.grateful||'')}</textarea>
+      <label class="grat-q">✨ One thing you're excited about in your future with ${who==='luke'?HER():HIS()}</label>
+      <textarea id="gratExcited" rows="2" placeholder="I can't wait until…">${escapeHtml(mine.excited||'')}</textarea>
+      <button class="pill-btn full" id="gratSave">Save Today's Entry</button>
+    </div>`;
+  renderGratitudeHistory();
+}
+function renderGratitudeHistory(){
+  const all = gratitudeAll();
+  const dates = Object.keys(all).sort().reverse();
+  const host = $('#gratHistory');
+  if (!dates.length){ host.innerHTML = '<p class="muted center">No entries yet — start today! 💕</p>'; return; }
+  host.innerHTML = `<h3 class="grat-hist-title">Past Entries</h3>` + dates.map(d=>{
+    const rec = all[d];
+    const blocks = ['luke','sophie'].map(w=>{
+      const r = rec[w]; if (!r || (!r.grateful && !r.excited)) return '';
+      return `<div class="grat-hist-person ${w}">
+        <div class="grat-hist-who">${w==='luke'?HIS():HER()}</div>
+        ${r.grateful?`<div class="grat-hist-line">🙏 ${escapeHtml(r.grateful)}</div>`:''}
+        ${r.excited?`<div class="grat-hist-line">✨ ${escapeHtml(r.excited)}</div>`:''}
+      </div>`;
+    }).join('');
+    if (!blocks.trim()) return '';
+    return `<div class="grat-hist-day"><div class="grat-hist-date">${fmtDate(d)}</div>${blocks}</div>`;
+  }).join('');
+}
+function fmtDate(ymd){
+  try { const [y,m,dd]=ymd.split('-'); return new Date(y,m-1,dd).toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'}); }
+  catch { return ymd; }
+}
+document.addEventListener('click', e => {
+  const gw = e.target.closest('#gratWhoToggle button');
+  if (gw){ gratWho = gw.dataset.gw; renderGratitude(); return; }
+  if (e.target.id==='gratSave'){
+    const all = gratitudeAll(); const today = todayStr();
+    all[today] = all[today] || {};
+    const g = $('#gratGrateful').value.trim(), x = $('#gratExcited').value.trim();
+    if (!g && !x){ toast('Write at least one thing 💕'); return; }
+    all[today][gratWho] = { grateful:g, excited:x, t:now() };
+    DB.set(K.gratitude, all);
+    logActivity(`💛 ${gratWho==='luke'?HIS():HER()} shared today's gratitude`);
+    toast('Saved 💛'); renderGratitude();
+  }
+});
+
+/* ===================================================================
+   PHOTO CALENDAR — month grid of past Photos of the Day
+   =================================================================== */
+let calYear, calMonth;
+function photosByDate(){
+  const map = {};
+  DB.get(K.photos, []).filter(p=>p.folder==='photoOfDay' && p.photoOfDayDate).forEach(p=>{
+    if (!map[p.photoOfDayDate] || (p.uploadedAt||0) > (map[p.photoOfDayDate].uploadedAt||0)) map[p.photoOfDayDate]=p;
+  });
+  const cur = DB.get(K.potd, null);
+  if (cur && cur.img){ const d = cur.date || todayStr(); map[d] = { img:cur.img, caption:cur.caption||'', photoOfDayDate:d, uploadedBy:cur.uploadedBy, uploadedAt:cur.uploadedAt, current:true }; }
+  return map;
+}
+function renderPhotoCalendar(){
+  if (calYear==null){ const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); }
+  const map = photosByDate();
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const monthName = first.toLocaleDateString([], {month:'long', year:'numeric'});
+  let cells = '';
+  for (let i=0;i<startDow;i++) cells += `<div class="cal-cell empty"></div>`;
+  for (let d=1; d<=daysInMonth; d++){
+    const ymd = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const p = map[ymd];
+    cells += `<div class="cal-cell ${p?'has-photo':''}" ${p?`data-calphoto="${ymd}"`:''}>
+      ${p?`<img src="${p.img}" alt="">`:''}
+      <span class="cal-day">${d}</span>
+    </div>`;
+  }
+  $('#calGrid').innerHTML = `
+    <div class="cal-head">
+      <button class="cal-nav" id="calPrev">‹</button>
+      <span class="cal-month">${monthName}</span>
+      <button class="cal-nav" id="calNext">›</button>
+    </div>
+    <div class="cal-dow">${['S','M','T','W','T','F','S'].map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>`;
+}
+document.addEventListener('click', e => {
+  if (e.target.id==='calPrev'){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderPhotoCalendar(); return; }
+  if (e.target.id==='calNext'){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderPhotoCalendar(); return; }
+  const cc = e.target.closest('[data-calphoto]');
+  if (cc && $('#page-calendar')?.classList.contains('active')){
+    const map = photosByDate(); const p = map[cc.dataset.calphoto];
+    if (p) openLightbox([{img:p.img, caption:`${fmtDate(cc.dataset.calphoto)}${p.uploadedBy?' · '+(p.uploadedBy==='luke'?HIS():HER()):''}${p.caption?' · '+p.caption:''}`}], 0);
+  }
 });
 
 /* ===================================================================
@@ -1403,6 +1678,8 @@ document.addEventListener('click', e => {
     else if (pg.id==='page-game-memory') renderMemoryFromState();
     else if (pg.id==='page-game-wyr') renderWYR();
     else if (pg.id==='page-game-draw') renderDrawTurn();
+    else if (pg.id==='page-game-story') renderStoryWriting();
+    else if (pg.id==='page-gratitude') renderGratitude();
   }
 });
 
